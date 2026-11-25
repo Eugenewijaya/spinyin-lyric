@@ -1,6 +1,6 @@
 // NAME: Spinyin-lyric for Spotify
 // AUTHOR: Eugenewijaya
-// VERSION: 2.1.0
+// VERSION: 2.2.0
 // DESCRIPTION: Standalone Liquid Glass lyrics stage and global 100% offline Mandarin (Hanzi) to Pinyin smart lyrics for Spotify and third-party lyrics extensions.
 // REPOSITORY: https://github.com/Eugenewijaya/spinyin-lyric
 
@@ -27,7 +27,7 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
   if (window.__spinyinLyricLoaded) return;
   window.__spinyinLyricLoaded = true;
 
-  const VERSION = "2.1.0";
+  const VERSION = "2.2.0";
   const REPO_URL = "https://github.com/Eugenewijaya/spinyin-lyric";
   const STORAGE_PREFIX = "spinyin:";
   const LEGACY_PREFIX = "mandarin-pinyin:";
@@ -655,18 +655,17 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
         background: radial-gradient(ellipse at 22% 18%, #181d25 0%, #0e1117 55%, #090b0f 100%);
       }
 
-      /* Adaptive ambient backdrop — low-cost GPU layer, zero WebGL */
+      /* Adaptive ambient backdrop — zero-blur pre-sampled radial gradient (60fps, ultra-light!) */
       .spinyin-stage-bg {
         position: absolute;
-        inset: -12%;
+        inset: 0;
         z-index: 0;
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        filter: blur(72px) saturate(1.35) brightness(0.45);
-        transform: scale(1.12) translateZ(0);
+        background:
+          radial-gradient(ellipse 80% 70% at 22% 30%, rgba(164, 92, 124, 0.34) 0%, transparent 65%),
+          radial-gradient(ellipse 75% 65% at 78% 72%, rgba(30, 215, 96, 0.14) 0%, transparent 65%),
+          #0a0c10;
         pointer-events: none;
-        transition: opacity 0.5s ease;
+        transition: opacity 0.35s ease;
       }
 
       .spinyin-stage[data-backdrop="low-ram"] .spinyin-stage-bg {
@@ -678,16 +677,14 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
         inset: 0;
         z-index: 1;
         pointer-events: none;
-        background:
-          radial-gradient(circle at 20% 30%, rgba(16, 20, 28, 0.22) 0%, rgba(8, 10, 15, 0.72) 78%),
-          linear-gradient(180deg, rgba(8, 10, 15, 0.36) 0%, rgba(8, 10, 15, 0.16) 45%, rgba(8, 10, 15, 0.48) 100%);
+        background: linear-gradient(180deg, rgba(8, 10, 14, 0.42) 0%, rgba(8, 10, 14, 0.12) 45%, rgba(8, 10, 14, 0.48) 100%);
       }
 
       .spinyin-stage[data-backdrop="low-ram"] .spinyin-stage-scrim {
         display: none;
       }
 
-      /* Top bar */
+      /* Top bar — clear safe inset below Spotify native Windows/macOS titlebar & window buttons */
       .spinyin-stage-topbar {
         position: relative;
         z-index: 3;
@@ -695,7 +692,11 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
         align-items: center;
         justify-content: space-between;
         gap: 12px;
-        padding: 16px clamp(18px, 3vw, 36px) 10px;
+        width: 100%;
+        max-width: 1380px;
+        margin: 0 auto;
+        box-sizing: border-box;
+        padding: 58px clamp(20px, 4vw, 52px) 12px;
         flex-shrink: 0;
         user-select: none;
       }
@@ -732,7 +733,7 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
       .spinyin-stage-controls {
         display: flex;
         align-items: center;
-        gap: 7px;
+        gap: 8px;
         flex-wrap: wrap;
         justify-content: flex-end;
       }
@@ -745,23 +746,19 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
         height: 34px;
         padding: 0 13px;
         border-radius: 999px;
-        border: 1px solid rgba(255, 255, 255, 0.13);
-        background: rgba(255, 255, 255, 0.075);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        color: rgba(255, 255, 255, 0.88);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.055));
+        color: rgba(255, 255, 255, 0.9);
         font-family: inherit;
         font-size: 12px;
         font-weight: 600;
         letter-spacing: 0.01em;
         cursor: pointer;
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
-        transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.12s ease;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+        transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease, transform 0.1s ease;
       }
 
       .spinyin-stage[data-backdrop="low-ram"] .spinyin-glass-btn {
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
         background: rgba(255, 255, 255, 0.08);
       }
 
@@ -803,28 +800,24 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
         align-items: center;
       }
 
-      /* Left Liquid Glass Track Card */
+      /* Left Liquid Glass Track Card (zero heavy backdrop-filter for 60fps featherweight rendering) */
       .spinyin-track-card {
         display: flex;
         flex-direction: column;
         gap: 18px;
         padding: 22px;
         border-radius: 26px;
-        background: rgba(255, 255, 255, 0.068);
-        backdrop-filter: blur(30px) saturate(1.25);
-        -webkit-backdrop-filter: blur(30px) saturate(1.25);
-        border: 1px solid rgba(255, 255, 255, 0.13);
+        background: linear-gradient(160deg, rgba(255, 255, 255, 0.095) 0%, rgba(18, 22, 30, 0.72) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.14);
         box-shadow:
-          0 24px 64px rgba(0, 0, 0, 0.36),
-          inset 0 1px 0 rgba(255, 255, 255, 0.16);
+          0 20px 52px rgba(0, 0, 0, 0.36),
+          inset 0 1px 0 rgba(255, 255, 255, 0.18);
         user-select: none;
       }
 
       .spinyin-stage[data-backdrop="low-ram"] .spinyin-track-card {
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
-        background: rgba(24, 28, 36, 0.92);
-        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.42);
+        background: rgba(20, 24, 32, 0.94);
+        box-shadow: 0 14px 36px rgba(0, 0, 0, 0.4);
       }
 
       .spinyin-art-wrap {
@@ -1703,8 +1696,14 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     return false;
   }
 
+  let lastGlobalHeuristicAt = 0;
+
   function collectGlobalExternalLyricLines(knownSet) {
     const discovered = [];
+    const now = Date.now();
+    if (now - lastGlobalHeuristicAt < 900) return discovered;
+    lastGlobalHeuristicAt = now;
+
     let containers;
     try {
       containers = document.querySelectorAll(GLOBAL_LYRICS_CONTAINER_SELECTOR);
@@ -1714,44 +1713,42 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     if (!containers || containers.length === 0) return discovered;
 
     const visited = new Set(knownSet);
-    containers.forEach((container) => {
+    let inspected = 0;
+    const MAX_INSPECT = 120;
+
+    for (let c = 0; c < containers.length && inspected < MAX_INSPECT; c++) {
+      const container = containers[c];
       if (
         !container ||
         container.closest?.(GLOBAL_LYRICS_IGNORE_SELECTOR) ||
         container.matches?.(GLOBAL_LYRICS_IGNORE_SELECTOR)
       ) {
-        return;
+        continue;
       }
       let candidates;
       try {
         candidates = container.querySelectorAll("div, p, li");
       } catch {
-        return;
+        continue;
       }
-      if (!candidates || candidates.length === 0) return;
+      if (!candidates || candidates.length === 0) continue;
 
-      for (let i = 0; i < candidates.length; i++) {
+      for (let i = 0; i < candidates.length && inspected < MAX_INSPECT; i++) {
+        inspected++;
         const el = candidates[i];
         if (!el || visited.has(el)) continue;
         if (el.closest?.(GLOBAL_LYRICS_IGNORE_SELECTOR) || el.matches?.(GLOBAL_LYRICS_IGNORE_SELECTOR)) {
           continue;
         }
-        // Skip if already contains a known lyric line or nested block Hanzi child
         if (el.querySelector?.(LYRIC_SELECTORS) || hasBlockHanziChild(el)) continue;
 
         const txt = extractCleanText(el);
         if (!txt || txt.length > 160 || !hasHanzi(txt)) continue;
 
-        // Avoid annotating tiny UI labels/badges inside unknown lyrics wrappers
-        try {
-          const fs = parseFloat(window.getComputedStyle?.(el)?.fontSize || "18");
-          if (fs > 0 && fs < 14) continue;
-        } catch {}
-
         visited.add(el);
         discovered.push(el);
       }
-    });
+    }
     return discovered;
   }
 
@@ -1783,7 +1780,7 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
   }
 
   function scanDOM() {
-    if (!window.pinyinPro || !document.body) return;
+    if (!window.pinyinPro || !document.body || stageOpen) return;
 
     let hasChineseLyricsOnScreen = false;
     const knownLyricSet = new Set();
@@ -2601,14 +2598,72 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     syncStageFullscreenBtn();
   }
 
+  const backdropPaletteCache = new Map();
+
+  function applyAmbientGradient(c1, c2) {
+    if (!stageBg) return;
+    stageBg.style.background =
+      `radial-gradient(ellipse 80% 72% at 22% 28%, rgba(${c1[0]}, ${c1[1]}, ${c1[2]}, 0.42) 0%, transparent 66%), ` +
+      `radial-gradient(ellipse 74% 66% at 78% 72%, rgba(${c2[0]}, ${c2[1]}, ${c2[2]}, 0.28) 0%, transparent 66%), #0a0c10`;
+  }
+
   function updateStageBackdrop() {
     if (!stageBg) return;
     if (state.backdropMode === "low-ram") {
-      stageBg.style.backgroundImage = "none";
+      stageBg.style.background = "";
       return;
     }
     const cover = stageCurrentTrack?.coverUrl || "";
-    stageBg.style.backgroundImage = cover ? `url("${cover.replace(/"/g, "%22")}")` : "none";
+    if (!cover) {
+      applyAmbientGradient([140, 82, 114], [30, 175, 92]);
+      return;
+    }
+    if (backdropPaletteCache.has(cover)) {
+      const pair = backdropPaletteCache.get(cover);
+      applyAmbientGradient(pair[0], pair[1]);
+      return;
+    }
+    // Zero-blur ambient color sampling via tiny 8x8 offscreen canvas (runs once per track)
+    try {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        try {
+          const cv = document.createElement("canvas");
+          cv.width = 8;
+          cv.height = 8;
+          const ctx = cv.getContext("2d", { willReadFrequently: true });
+          ctx.drawImage(img, 0, 0, 8, 8);
+          const data = ctx.getImageData(0, 0, 8, 8).data;
+          let r1 = 0, g1 = 0, b1 = 0, r2 = 0, g2 = 0, b2 = 0;
+          for (let i = 0; i < 32; i++) {
+            const p = i * 4;
+            r1 += data[p]; g1 += data[p + 1]; b1 += data[p + 2];
+          }
+          for (let i = 32; i < 64; i++) {
+            const p = i * 4;
+            r2 += data[p]; g2 += data[p + 1]; b2 += data[p + 2];
+          }
+          const pair = [
+            [Math.round(r1 / 32), Math.round(g1 / 32), Math.round(b1 / 32)],
+            [Math.round(r2 / 32), Math.round(g2 / 32), Math.round(b2 / 32)],
+          ];
+          if (backdropPaletteCache.size >= 40) {
+            backdropPaletteCache.delete(backdropPaletteCache.keys().next().value);
+          }
+          backdropPaletteCache.set(cover, pair);
+          if (stageOpen && state.backdropMode !== "low-ram" && stageCurrentTrack?.coverUrl === cover) {
+            applyAmbientGradient(pair[0], pair[1]);
+          }
+        } catch {
+          applyAmbientGradient([140, 82, 114], [30, 175, 92]);
+        }
+      };
+      img.onerror = () => applyAmbientGradient([140, 82, 114], [30, 175, 92]);
+      img.src = cover;
+    } catch {
+      applyAmbientGradient([140, 82, 114], [30, 175, 92]);
+    }
   }
 
   function updateStageTrackHeader() {
@@ -2898,14 +2953,17 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
       stagePlayBtn.setAttribute("aria-label", playing ? "Pause" : "Play");
     }
 
-    // Progress scrubber
+    // Progress scrubber (avoid redundant DOM text mutations on same second)
     const posMs = Number(window.Spicetify?.Player?.getProgress?.()) || 0;
     const durMs = getStageDurationMs();
     if (!isScrubbing) {
       const pct = durMs > 0 ? Math.min(100, Math.max(0, (posMs / durMs) * 100)) : 0;
-      stageScrubFill.style.width = `${pct.toFixed(2)}%`;
-      stageElapsedEl.textContent = formatTime(posMs);
-      stageDurationEl.textContent = formatTime(durMs);
+      const pctStr = `${pct.toFixed(1)}%`;
+      if (stageScrubFill.style.width !== pctStr) stageScrubFill.style.width = pctStr;
+      const elapsedStr = formatTime(posMs);
+      if (stageElapsedEl.textContent !== elapsedStr) stageElapsedEl.textContent = elapsedStr;
+      const durStr = formatTime(durMs);
+      if (stageDurationEl.textContent !== durStr) stageDurationEl.textContent = durStr;
       stageScrubHit.setAttribute("aria-valuenow", String(Math.round(pct)));
     }
 
@@ -2938,7 +2996,7 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
   function startStageSyncLoop() {
     if (!stageOpen || document.hidden || stageSyncTimer) return;
     updateStagePlaybackTick();
-    stageSyncTimer = setInterval(updateStagePlaybackTick, 120);
+    stageSyncTimer = setInterval(updateStagePlaybackTick, 200);
   }
 
   function stopStageSyncLoop() {
@@ -2971,6 +3029,7 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     if (stageRoot) {
       stageRoot.classList.remove("is-open");
     }
+    scheduleScan(50);
     if (stageEnteredFullscreen && document.fullscreenElement) {
       stageEnteredFullscreen = false;
       try {
@@ -3406,6 +3465,7 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     scanDOM();
 
     const observer = new MutationObserver((mutations) => {
+      if (stageOpen) return;
       for (const m of mutations) {
         const t = m.target;
         if (
@@ -3415,7 +3475,7 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
         ) {
           continue;
         }
-        scheduleScan(100);
+        scheduleScan(240);
         return;
       }
     });
