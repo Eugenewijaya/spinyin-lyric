@@ -8,7 +8,7 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-[![Version](https://img.shields.io/badge/version-v2.0.0-1ed760?style=flat-square)](https://github.com/Eugenewijaya/spinyin-lyric/releases)
+[![Version](https://img.shields.io/badge/version-v2.1.0-1ed760?style=flat-square)](https://github.com/Eugenewijaya/spinyin-lyric/releases)
 [![Spicetify Marketplace](https://img.shields.io/badge/Spicetify-Marketplace-1db954?style=flat-square&logo=spotify&logoColor=white)](https://spicetify.app)
 [![Live Site](https://img.shields.io/badge/Live%20Site-spinyin--lyric-0ea5e9?style=flat-square)](https://eugenewijaya.github.io/spinyin-lyric/)
 [![Offline Engine](https://img.shields.io/badge/Offline%20Engine-pinyin--pro-22262e?style=flat-square)](#key-features)
@@ -96,6 +96,10 @@ curl -fsSL https://raw.githubusercontent.com/Eugenewijaya/spinyin-lyric/main/ins
 ## Versioning & Changelog
 
 This project follows [Semantic Versioning](https://semver.org/).
+
+### `v2.1.0`
+- Added global lyrics auto-connect: automatically detects and annotates Mandarin lyrics across third-party Spotify lyrics extensions (including Dual and Pinyin-Only modes) whenever Spinyin is active.
+- Unified child-wrapped and bare-text Pinyin-Only rules so custom lyrics extensions stay crisp without breaking layout or sync.
 
 ### `v2.0.0`
 - Added the built-in **Standalone Liquid Glass Lyrics Stage** accessible from the Spotify playbar and Profile menu (`Escape` to close, plus Fullscreen toggle).

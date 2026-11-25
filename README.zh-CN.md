@@ -8,7 +8,7 @@
 
 [English](README.md) | **简体中文**
 
-[![版本](https://img.shields.io/badge/version-v2.0.0-1ed760?style=flat-square)](https://github.com/Eugenewijaya/spinyin-lyric/releases)
+[![版本](https://img.shields.io/badge/version-v2.1.0-1ed760?style=flat-square)](https://github.com/Eugenewijaya/spinyin-lyric/releases)
 [![Spicetify Marketplace](https://img.shields.io/badge/Spicetify-Marketplace-1db954?style=flat-square&logo=spotify&logoColor=white)](https://spicetify.app)
 [![在线主页](https://img.shields.io/badge/Live%20Site-spinyin--lyric-0ea5e9?style=flat-square)](https://eugenewijaya.github.io/spinyin-lyric/)
 [![离线引擎](https://img.shields.io/badge/Offline%20Engine-pinyin--pro-22262e?style=flat-square)](#核心功能)
@@ -96,6 +96,10 @@ curl -fsSL https://raw.githubusercontent.com/Eugenewijaya/spinyin-lyric/main/ins
 ## 版本记录
 
 本项目遵循 [语义化版本规范（SemVer）](https://semver.org/)。
+
+### `v2.1.0`
+- 新增全局歌词扩展自动兼容：开启 Spinyin 后可自动识别并适配 Spotify 原生歌词及各类第三方歌词扩展（同时支持双语模式与纯拼音模式）。
+- 统一子元素包裹与纯文本歌词行的纯拼音替换规则，保持排版清晰且不破坏原有滚动同步。
 
 ### `v2.0.0`
 - 新增内置 **独立液态玻璃歌词舞台（Standalone Liquid Glass Lyrics Stage）**，支持播放栏与个人资料菜单一键开启、`Escape` 关闭及全屏模式。

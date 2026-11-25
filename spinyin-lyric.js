@@ -1,7 +1,7 @@
 // NAME: Spinyin-lyric for Spotify
 // AUTHOR: Eugenewijaya
-// VERSION: 2.0.0
-// DESCRIPTION: Standalone Liquid Glass lyrics stage and 100% offline Mandarin (Hanzi) to Pinyin smart lyrics for Spotify.
+// VERSION: 2.1.0
+// DESCRIPTION: Standalone Liquid Glass lyrics stage and global 100% offline Mandarin (Hanzi) to Pinyin smart lyrics for Spotify and third-party lyrics extensions.
 // REPOSITORY: https://github.com/Eugenewijaya/spinyin-lyric
 
 if (typeof window !== "undefined" && !window.pinyinPro) {
@@ -27,7 +27,7 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
   if (window.__spinyinLyricLoaded) return;
   window.__spinyinLyricLoaded = true;
 
-  const VERSION = "2.0.0";
+  const VERSION = "2.1.0";
   const REPO_URL = "https://github.com/Eugenewijaya/spinyin-lyric";
   const STORAGE_PREFIX = "spinyin:";
   const LEGACY_PREFIX = "mandarin-pinyin:";
@@ -36,24 +36,40 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
   const LYRICS_CACHE_LIMIT = 60;
   const SVG_NS = "http://www.w3.org/2000/svg";
 
-  // Universal lyrics selectors: Spotify Native, Liquid Lyrics, Beautiful Lyrics,
-  // Spicy Lyrics, Lyrics Plus, and generic lyrics extensions
+  // Global lyrics selectors covering Spotify Native, Liquid Lyrics, Lyssna Lyrics,
+  // Beautiful Lyrics, Spicy Lyrics, Lyrics Plus, Popup/FAD Lyrics, and generic extensions
   const LYRIC_SELECTORS = [
     ".lyrics-lyricsContent-text",
     '[data-testid="fullscreen-lyric"]',
     '[data-testid="lyrics-line-always-visible"]',
     "#expandable-lyrics-container p",
     ".liquid-lyrics-line",
+    ".lyssna-lyric-line",
+    ".lyssna-lyrics-line",
+    '[class*="lyssna" i][class*="line" i]',
     ".Lyrics .Vocals.Lead",
     ".Lyrics .Vocals.Background",
     ".spicy-lyrics-line",
     ".SpicyLyricsPage .line",
+    "#SpicyLyricsPage .line",
+    ".LyricsContainer .line",
     ".lyrics-lyricsContent-lyric",
-    '[class*="lyrics-line"]',
+    ".lyrics-lyricsContainer-LyricsLine",
+    "#fad-lyrics-plus-container p",
+    ".popup-lyrics-line",
+    '[class*="LyricsLine"]',
+    '[class*="lyrics-line" i]',
     '[class*="lyricsLine"]',
-    '[class*="lyric-line"]',
+    '[class*="lyric-line" i]',
     '[class*="lyricLine"]',
   ].join(", ");
+
+  // Global container selector used by heuristic fallback for any unknown lyrics extension
+  const GLOBAL_LYRICS_CONTAINER_SELECTOR =
+    '[class*="lyric" i], [id*="lyric" i], [data-testid*="lyric" i]';
+
+  const GLOBAL_LYRICS_IGNORE_SELECTOR =
+    'header, nav, footer, input, textarea, select, [role="menu"], [role="menubar"], [role="dialog"], [role="tablist"], [class*="control" i], [class*="setting" i], [class*="header" i], [class*="toolbar" i], [class*="sidebar-card-title" i], [class*="song-card" i], [class*="credit" i], [class*="button" i], .spinyin-stage, .spinyin-modal, .spinyin-pill';
 
   const BLOCK_TITLE_SELECTORS = [
     '[data-testid="entityTitle"] h1',
@@ -419,16 +435,18 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
         text-shadow: 0 1px 10px rgba(0, 0, 0, 0.24);
       }
 
-      /* Active running lyric highlight across all other lyrics engines */
+      /* Active running lyric highlight across all lyrics engines (global) */
       html.spinyin-enabled.spinyin-lyrics .SOT5gG00YqnGQ4uR7PwQ [data-spinyin-kind="lyric"][data-spinyin]::after,
       html.spinyin-enabled.spinyin-lyrics .lyrics-lyricsContent-active [data-spinyin-kind="lyric"][data-spinyin]::after,
       html.spinyin-enabled.spinyin-lyrics .Vocals.Active[data-spinyin-kind="lyric"][data-spinyin]::after,
-      html.spinyin-enabled.spinyin-lyrics .spicy-lyrics-line.active[data-spinyin-kind="lyric"][data-spinyin]::after {
+      html.spinyin-enabled.spinyin-lyrics .spicy-lyrics-line.active[data-spinyin-kind="lyric"][data-spinyin]::after,
+      html.spinyin-enabled.spinyin-lyrics [data-spinyin-kind="lyric"][class*="active" i][data-spinyin]::after {
         opacity: 0.98;
       }
 
-      /* === PINYIN ONLY MODE (Hide Hanzi, Pinyin becomes the crisp primary lyric) === */
-      /* 1. Child-wrapped engines: Liquid Lyrics, Beautiful Lyrics, Spicy Lyrics */
+      /* === PINYIN ONLY MODE (Hide Hanzi, Pinyin becomes the crisp primary lyric globally) === */
+      /* 1. Child-wrapped engines (Liquid, Lyssna, Beautiful, Spicy, & any heuristic child-wrapped lyric line) */
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only [data-spinyin-kind="lyric"][data-spinyin-wrap="children"][data-spinyin] > *:not(.ll-interlude-dot),
       html.spinyin-enabled.spinyin-lyrics.spinyin-only .liquid-lyrics-line[data-spinyin] > *:not(.ll-interlude-dot),
       html.spinyin-enabled.spinyin-lyrics.spinyin-only .Lyrics .Vocals.Lead[data-spinyin] > *,
       html.spinyin-enabled.spinyin-lyrics.spinyin-only .Lyrics .Vocals.Background[data-spinyin] > *,
@@ -449,6 +467,7 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
         transform: translate3d(0, -1px, 0) scale(1.02) !important;
       }
 
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only [data-spinyin-kind="lyric"][data-spinyin-wrap="children"][data-spinyin]::after,
       html.spinyin-enabled.spinyin-lyrics.spinyin-only .liquid-lyrics-line[data-spinyin]::after,
       html.spinyin-enabled.spinyin-lyrics.spinyin-only .Lyrics .Vocals.Lead[data-spinyin]::after,
       html.spinyin-enabled.spinyin-lyrics.spinyin-only .Lyrics .Vocals.Background[data-spinyin]::after,
@@ -479,7 +498,8 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
         text-shadow: 0 2px 14px rgba(0, 0, 0, 0.28);
       }
 
-      /* 2. Bare-text engines: Spotify Native Lyrics, Lyrics Plus, Track Page */
+      /* 2. Bare-text engines (Spotify Native, Lyrics Plus, Track Page, & any bare-text lyric line) */
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only [data-spinyin-kind="lyric"][data-spinyin-wrap="text"][data-spinyin],
       html.spinyin-enabled.spinyin-lyrics.spinyin-only .lyrics-lyricsContent-text[data-spinyin],
       html.spinyin-enabled.spinyin-lyrics.spinyin-only .lyrics-lyricsContent-lyric[data-spinyin],
       html.spinyin-enabled.spinyin-lyrics.spinyin-only [data-testid="fullscreen-lyric"][data-spinyin],
@@ -489,6 +509,7 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
         line-height: 0 !important;
       }
 
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only [data-spinyin-kind="lyric"][data-spinyin-wrap="text"][data-spinyin]::after,
       html.spinyin-enabled.spinyin-lyrics.spinyin-only .lyrics-lyricsContent-text[data-spinyin]::after,
       html.spinyin-enabled.spinyin-lyrics.spinyin-only .lyrics-lyricsContent-lyric[data-spinyin]::after,
       html.spinyin-enabled.spinyin-lyrics.spinyin-only [data-testid="fullscreen-lyric"][data-spinyin]::after,
@@ -1635,28 +1656,103 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
 
     const pinyin = convertToPinyin(text, state.toneType);
     if (pinyin && pinyin !== text) {
-      // Preserve native computed font size for bare-text lyrics before Pinyin-Only mode hides base text
-      if (kind === "lyric" && !el.style.getPropertyValue?.("--spinyin-fs")) {
-        try {
-          const ownFs = window.getComputedStyle?.(el)?.fontSize;
-          const ownPx = parseFloat(ownFs);
-          if (ownPx && ownPx >= 10) {
-            el.style.setProperty("--spinyin-fs", ownFs);
-          } else if (el.parentElement) {
-            const parentFs = window.getComputedStyle?.(el.parentElement)?.fontSize;
-            const parentPx = parseFloat(parentFs);
-            if (parentPx && parentPx >= 10) {
-              el.style.setProperty("--spinyin-fs", parentFs);
+      if (kind === "lyric") {
+        // Detect whether this lyric line wraps Hanzi in child spans (e.g. karaoke syllables) or bare text
+        const hasChildElements = el.children && el.children.length > 0;
+        el.setAttribute("data-spinyin-wrap", hasChildElements ? "children" : "text");
+
+        // Preserve native computed font size for bare-text lyrics before Pinyin-Only mode hides base text
+        if (!hasChildElements && !el.style.getPropertyValue?.("--spinyin-fs")) {
+          try {
+            const ownFs = window.getComputedStyle?.(el)?.fontSize;
+            const ownPx = parseFloat(ownFs);
+            if (ownPx && ownPx >= 10) {
+              el.style.setProperty("--spinyin-fs", ownFs);
+            } else if (el.parentElement) {
+              const parentFs = window.getComputedStyle?.(el.parentElement)?.fontSize;
+              const parentPx = parseFloat(parentFs);
+              if (parentPx && parentPx >= 10) {
+                el.style.setProperty("--spinyin-fs", parentFs);
+              }
             }
-          }
-        } catch {}
+          } catch {}
+        }
       }
       el.setAttribute("data-spinyin", pinyin);
       el.setAttribute("data-spinyin-kind", kind);
     } else {
       el.removeAttribute("data-spinyin");
       el.removeAttribute("data-spinyin-kind");
+      el.removeAttribute("data-spinyin-wrap");
     }
+  }
+
+  // Heuristic global detector for ANY third-party or future lyrics extension
+  const BLOCK_LINE_TAGS = new Set(["DIV", "P", "LI", "H2", "H3", "H4", "ARTICLE", "SECTION"]);
+
+  function hasBlockHanziChild(el) {
+    if (!el.children || el.children.length === 0) return false;
+    for (let i = 0; i < el.children.length; i++) {
+      const child = el.children[i];
+      if (!child || child.matches?.(ROMANIZATION_SUB_SELECTOR)) continue;
+      if (BLOCK_LINE_TAGS.has(child.tagName)) {
+        const txt = (child.textContent || "").trim();
+        if (txt && hasHanzi(txt)) return true;
+      }
+    }
+    return false;
+  }
+
+  function collectGlobalExternalLyricLines(knownSet) {
+    const discovered = [];
+    let containers;
+    try {
+      containers = document.querySelectorAll(GLOBAL_LYRICS_CONTAINER_SELECTOR);
+    } catch {
+      return discovered;
+    }
+    if (!containers || containers.length === 0) return discovered;
+
+    const visited = new Set(knownSet);
+    containers.forEach((container) => {
+      if (
+        !container ||
+        container.closest?.(GLOBAL_LYRICS_IGNORE_SELECTOR) ||
+        container.matches?.(GLOBAL_LYRICS_IGNORE_SELECTOR)
+      ) {
+        return;
+      }
+      let candidates;
+      try {
+        candidates = container.querySelectorAll("div, p, li");
+      } catch {
+        return;
+      }
+      if (!candidates || candidates.length === 0) return;
+
+      for (let i = 0; i < candidates.length; i++) {
+        const el = candidates[i];
+        if (!el || visited.has(el)) continue;
+        if (el.closest?.(GLOBAL_LYRICS_IGNORE_SELECTOR) || el.matches?.(GLOBAL_LYRICS_IGNORE_SELECTOR)) {
+          continue;
+        }
+        // Skip if already contains a known lyric line or nested block Hanzi child
+        if (el.querySelector?.(LYRIC_SELECTORS) || hasBlockHanziChild(el)) continue;
+
+        const txt = extractCleanText(el);
+        if (!txt || txt.length > 160 || !hasHanzi(txt)) continue;
+
+        // Avoid annotating tiny UI labels/badges inside unknown lyrics wrappers
+        try {
+          const fs = parseFloat(window.getComputedStyle?.(el)?.fontSize || "18");
+          if (fs > 0 && fs < 14) continue;
+        } catch {}
+
+        visited.add(el);
+        discovered.push(el);
+      }
+    });
+    return discovered;
   }
 
   // Auto-fix Liquify theme's #liquify-next-song-card getting stuck at (0,0) on Spotify 1.3.10+
@@ -1690,24 +1786,40 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     if (!window.pinyinPro || !document.body) return;
 
     let hasChineseLyricsOnScreen = false;
+    const knownLyricSet = new Set();
     const lyricNodes = document.querySelectorAll(LYRIC_SELECTORS);
+
+    const processLyricEl = (el) => {
+      if (el.closest?.(".spinyin-stage")) return;
+      const existingRom = el.querySelector?.(".liquid-lyrics-romanization, .Romanized");
+      if (existingRom && (existingRom.textContent || "").trim().length > 0) {
+        el.removeAttribute("data-spinyin");
+        el.removeAttribute("data-spinyin-kind");
+        el.removeAttribute("data-spinyin-wrap");
+        return;
+      }
+      const txt = extractCleanText(el);
+      if (hasHanzi(txt)) hasChineseLyricsOnScreen = true;
+      if (state.enabled && state.translateLyrics) {
+        annotateElement(el, "lyric");
+      }
+    };
 
     if (lyricNodes.length > 0) {
       lyricNodes.forEach((el) => {
         if (el.closest?.(".spinyin-stage")) return;
         if (el.querySelector?.(LYRIC_SELECTORS)) return;
-        const existingRom = el.querySelector?.(".liquid-lyrics-romanization, .Romanized");
-        if (existingRom && (existingRom.textContent || "").trim().length > 0) {
-          el.removeAttribute("data-spinyin");
-          el.removeAttribute("data-spinyin-kind");
-          return;
-        }
-        const txt = extractCleanText(el);
-        if (hasHanzi(txt)) hasChineseLyricsOnScreen = true;
-        if (state.enabled && state.translateLyrics) {
-          annotateElement(el, "lyric");
-        }
+        knownLyricSet.add(el);
+        processLyricEl(el);
       });
+    }
+
+    // Global heuristic fallback: automatically connects to ANY other third-party lyrics extension
+    if (state.enabled && state.translateLyrics && !stageOpen) {
+      const globalLines = collectGlobalExternalLyricLines(knownLyricSet);
+      for (let i = 0; i < globalLines.length; i++) {
+        processLyricEl(globalLines[i]);
+      }
     }
 
     if (pillRoot) {
@@ -3316,7 +3428,12 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     setInterval(() => {
       if (document.hidden) return;
       fixLiquifyNextSongCard();
-      if (!stageOpen && state.enabled && state.translateLyrics && document.querySelector(LYRIC_SELECTORS)) {
+      if (
+        !stageOpen &&
+        state.enabled &&
+        state.translateLyrics &&
+        (document.querySelector(LYRIC_SELECTORS) || document.querySelector(GLOBAL_LYRICS_CONTAINER_SELECTOR))
+      ) {
         scanDOM();
       }
     }, 1200);
