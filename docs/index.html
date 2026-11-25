@@ -1348,21 +1348,101 @@
     }
 
     /* -----------------------------------------
-     * Scroll Reveal Animations
+     * 3D Atmospheric Canvas & Top Scroll Progress
+     * ----------------------------------------- */
+    .scroll-progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 2.5px;
+      z-index: 120;
+      transform-origin: 0 50%;
+      transform: scaleX(0);
+      background: linear-gradient(90deg, #1ed760 0%, #6ef3a5 55%, #f4b8ce 100%);
+      box-shadow: 0 0 14px rgba(30, 215, 96, 0.65);
+      pointer-events: none;
+    }
+
+    #bg-3d-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.92;
+    }
+
+    /* -----------------------------------------
+     * 3D Constructive Scroll Assembly Animations
      * ----------------------------------------- */
     .scroll-reveal {
       opacity: 0;
-      transform: translate3d(0, 28px, 0) scale(0.985);
+      filter: blur(4px);
+      transform: perspective(1200px) translate3d(0, 44px, -28px) rotateX(8deg) scale(0.96);
+      transform-origin: center top;
       transition:
-        opacity 0.68s cubic-bezier(0.22, 1, 0.36, 1),
-        transform 0.72s cubic-bezier(0.22, 1, 0.36, 1);
+        opacity 0.78s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.86s cubic-bezier(0.22, 1, 0.36, 1),
+        filter 0.72s cubic-bezier(0.22, 1, 0.36, 1);
       transition-delay: var(--reveal-delay, 0ms);
-      will-change: opacity, transform;
+      will-change: opacity, transform, filter;
+    }
+
+    .scroll-reveal.reveal-left {
+      transform: perspective(1200px) translate3d(-40px, 28px, -20px) rotateY(7deg) scale(0.96);
+    }
+
+    .scroll-reveal.reveal-right {
+      transform: perspective(1200px) translate3d(40px, 28px, -20px) rotateY(-7deg) scale(0.96);
     }
 
     .scroll-reveal.is-revealed {
       opacity: 1;
+      filter: blur(0);
+      transform: perspective(1200px) translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg) scale(1);
+    }
+
+    .reveal-child {
+      opacity: 0;
+      transform: translate3d(0, 18px, 0) scale(0.98);
+      transition:
+        opacity 0.62s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.68s cubic-bezier(0.22, 1, 0.36, 1);
+      transition-delay: var(--child-delay, 0ms);
+    }
+
+    .is-revealed .reveal-child,
+    .reveal-child.is-revealed {
+      opacity: 1;
       transform: translate3d(0, 0, 0) scale(1);
+    }
+
+    /* Interactive 3D Liquid Glass Specular Sheen on Feature Cards */
+    .feature-card {
+      position: relative;
+      overflow: hidden;
+      transform-style: preserve-3d;
+    }
+
+    .feature-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      background: radial-gradient(
+        320px circle at var(--mx, 50%) var(--my, 50%),
+        rgba(30, 215, 96, 0.14),
+        rgba(244, 184, 206, 0.06) 45%,
+        transparent 75%
+      );
+      transition: opacity 0.25s ease;
+    }
+
+    .feature-card:hover::before {
+      opacity: 1;
     }
 
     /* -----------------------------------------
@@ -1465,10 +1545,13 @@
       .cn-cloud {
         animation: none;
       }
-      .scroll-reveal {
+      .scroll-reveal,
+      .reveal-child {
         opacity: 1 !important;
+        filter: none !important;
         transform: none !important;
       }
+      #bg-3d-canvas,
       .swarm-layer {
         display: none !important;
       }
@@ -1479,10 +1562,12 @@
   </style>
 </head>
 <body>
+  <div class="scroll-progress" id="scroll-progress" aria-hidden="true"></div>
   <div class="ambient-canvas" aria-hidden="true">
     <div class="ambient-orb ambient-orb--rose"></div>
     <div class="ambient-orb ambient-orb--emerald"></div>
   </div>
+  <canvas id="bg-3d-canvas" aria-hidden="true"></canvas>
   <!-- Subtle Spotify-styled Chinese Ornaments (Fretwork Lattice, Auspicious Clouds, Ink Seal) -->
   <div class="cn-ornament-canvas" aria-hidden="true">
     <!-- Top-Left Chinese Key-Fret Lattice (回纹窗格) -->
@@ -2526,19 +2611,296 @@
       }
 
       /* -----------------------------------------
-       * 4. Scroll-Reveal Stagger & Chinese Ornament Parallax
+       * 4. Real-Time 3D Atmospheric Background Engine
+       *    (3D Acoustic Wave Grid + Orbital Rings + Depth Motes)
        * ----------------------------------------- */
+      (function init3DBackground() {
+        const canvas = document.getElementById("bg-3d-canvas");
+        if (!canvas || prefersReducedMotion) return;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        let width = 0;
+        let height = 0;
+        let dpr = 1;
+        let rafId = 0;
+        let targetMouseX = 0;
+        let targetMouseY = 0;
+        let mouseX = 0;
+        let mouseY = 0;
+        let targetScroll = 0;
+        let smoothScroll = 0;
+
+        // 3D Grid parameters (flowing acoustic wave ribbon)
+        const COLS = 22;
+        const ROWS = 13;
+        const DEPTH_PARTICLES = 44;
+
+        // Generate 3D floating depth motes
+        const depthMotes = [];
+        for (let i = 0; i < DEPTH_PARTICLES; i++) {
+          depthMotes.push({
+            x: (Math.random() - 0.5) * 1400,
+            y: (Math.random() - 0.5) * 900,
+            z: 180 + Math.random() * 1100,
+            speed: 0.35 + Math.random() * 0.65,
+            radius: 1.4 + Math.random() * 2.4,
+            hue: i % 3 === 0 ? "rgba(244, 184, 206," : "rgba(30, 215, 96,"
+          });
+        }
+
+        function resizeCanvas() {
+          dpr = Math.min(window.devicePixelRatio || 1, 1.75);
+          width = window.innerWidth;
+          height = window.innerHeight;
+          canvas.width = Math.round(width * dpr);
+          canvas.height = Math.round(height * dpr);
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        resizeCanvas();
+        window.addEventListener("resize", resizeCanvas, { passive: true });
+
+        window.addEventListener("pointermove", function (e) {
+          if (e.pointerType === "touch") return;
+          targetMouseX = (e.clientX / Math.max(1, width) - 0.5) * 2;
+          targetMouseY = (e.clientY / Math.max(1, height) - 0.5) * 2;
+        }, { passive: true });
+
+        function project3D(x, y, z, fov) {
+          const scale = fov / (fov + z);
+          return {
+            x: width * 0.5 + x * scale,
+            y: height * 0.52 + y * scale,
+            scale: scale
+          };
+        }
+
+        function rotatePoint(x, y, z, rx, ry, rz) {
+          // Rotate X
+          const cosX = Math.cos(rx), sinX = Math.sin(rx);
+          const y1 = y * cosX - z * sinX;
+          const z1 = y * sinX + z * cosX;
+          // Rotate Y
+          const cosY = Math.cos(ry), sinY = Math.sin(ry);
+          const x2 = x * cosY + z1 * sinY;
+          const z2 = -x * sinY + z1 * cosY;
+          // Rotate Z
+          const cosZ = Math.cos(rz), sinZ = Math.sin(rz);
+          return {
+            x: x2 * cosZ - y1 * sinZ,
+            y: x2 * sinZ + y1 * cosZ,
+            z: z2
+          };
+        }
+
+        function drawOrbitalRing(radius, segments, rx, ry, rz, centerY, strokeStyle, lineWidth) {
+          const fov = 720;
+          ctx.beginPath();
+          let started = false;
+          for (let i = 0; i <= segments; i++) {
+            const a = (i / segments) * Math.PI * 2;
+            const px = Math.cos(a) * radius;
+            const py = Math.sin(a) * radius;
+            const p = rotatePoint(px, py, 0, rx, ry, rz);
+            const zPos = p.z + 460;
+            if (zPos < -500) continue;
+            const proj = project3D(p.x, p.y + centerY, zPos, fov);
+            if (!started) {
+              ctx.moveTo(proj.x, proj.y);
+              started = true;
+            } else {
+              ctx.lineTo(proj.x, proj.y);
+            }
+          }
+          ctx.strokeStyle = strokeStyle;
+          ctx.lineWidth = lineWidth;
+          ctx.stroke();
+        }
+
+        function render3D(now) {
+          rafId = window.requestAnimationFrame(render3D);
+          if (document.hidden) return;
+
+          const t = now * 0.00055;
+          const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+          targetScroll = (window.scrollY || window.pageYOffset || 0) / maxScroll;
+
+          mouseX += (targetMouseX - mouseX) * 0.05;
+          mouseY += (targetMouseY - mouseY) * 0.05;
+          smoothScroll += (targetScroll - smoothScroll) * 0.07;
+
+          ctx.clearRect(0, 0, width, height);
+
+          const fov = 680;
+          const tiltX = 0.72 + mouseY * 0.14 + smoothScroll * 0.32;
+          const tiltY = mouseX * 0.24 + smoothScroll * 0.48;
+
+          // 1. 3D Floating Orbital Soundwave Rings (depth-layered behind cards)
+          drawOrbitalRing(
+            Math.min(width, 960) * 0.34,
+            72,
+            1.15 + smoothScroll * 0.65 + mouseY * 0.18,
+            t * 0.35 + mouseX * 0.3,
+            t * 0.12,
+            -40 - smoothScroll * 120,
+            "rgba(30, 215, 96, 0.14)",
+            1.2
+          );
+          drawOrbitalRing(
+            Math.min(width, 960) * 0.46,
+            80,
+            0.92 - smoothScroll * 0.5 + mouseY * 0.12,
+            -t * 0.24 + mouseX * 0.22,
+            0.45,
+            30 - smoothScroll * 90,
+            "rgba(244, 184, 206, 0.10)",
+            1
+          );
+          drawOrbitalRing(
+            Math.min(width, 960) * 0.22,
+            56,
+            1.32 + smoothScroll * 0.4,
+            t * 0.55 - mouseX * 0.25,
+            -0.3,
+            -10 - smoothScroll * 60,
+            "rgba(255, 255, 255, 0.075)",
+            0.9
+          );
+
+          // 2. 3D Flowing Acoustic Mesh Wave
+          const spacingX = Math.max(58, width / 16);
+          const spacingZ = 64;
+          const grid = [];
+
+          for (let r = 0; r < ROWS; r++) {
+            const rowPts = [];
+            for (let c = 0; c < COLS; c++) {
+              const gx = (c - (COLS - 1) * 0.5) * spacingX;
+              const gz = (r - ROWS * 0.35) * spacingZ + 220;
+              const wave =
+                Math.sin(c * 0.45 + t * 2.1 + smoothScroll * 4.2) * 28 +
+                Math.cos(r * 0.55 - t * 1.6 + smoothScroll * 3.0) * 22;
+              const gy = 175 + wave - smoothScroll * 90;
+
+              const rot = rotatePoint(gx, gy, gz, tiltX * 0.38, tiltY * 0.42, 0);
+              const proj = project3D(rot.x, rot.y, rot.z + 320, fov);
+              rowPts.push({
+                x: proj.x,
+                y: proj.y,
+                scale: proj.scale,
+                wave: wave
+              });
+            }
+            grid.push(rowPts);
+          }
+
+          // Draw sleek connecting acoustic ribbons (horizontal wave lines)
+          for (let r = 0; r < ROWS; r++) {
+            const depthAlpha = Math.max(0.02, Math.min(0.18, (1 - r / ROWS) * 0.2));
+            ctx.beginPath();
+            for (let c = 0; c < COLS; c++) {
+              const pt = grid[r][c];
+              if (c === 0) ctx.moveTo(pt.x, pt.y);
+              else ctx.lineTo(pt.x, pt.y);
+            }
+            ctx.strokeStyle = r % 3 === 0
+              ? "rgba(244, 184, 206, " + (depthAlpha * 0.72).toFixed(3) + ")"
+              : "rgba(30, 215, 96, " + depthAlpha.toFixed(3) + ")";
+            ctx.lineWidth = 0.95;
+            ctx.stroke();
+          }
+
+          // Glowing 3D vertices along wave crests
+          for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+              const pt = grid[r][c];
+              if (pt.scale <= 0.15) continue;
+              const crest = (pt.wave + 50) / 100;
+              const rad = Math.max(0.8, pt.scale * (1.2 + crest * 1.6));
+              const alpha = Math.max(0.05, Math.min(0.52, pt.scale * (0.14 + crest * 0.36)));
+              ctx.beginPath();
+              ctx.arc(pt.x, pt.y, rad, 0, Math.PI * 2);
+              ctx.fillStyle = (c + r) % 4 === 0
+                ? "rgba(244, 184, 206, " + alpha.toFixed(3) + ")"
+                : "rgba(30, 215, 96, " + alpha.toFixed(3) + ")";
+              ctx.fill();
+            }
+          }
+
+          // 3. 3D Forward-Drifting Depth Motes
+          for (let i = 0; i < depthMotes.length; i++) {
+            const m = depthMotes[i];
+            m.z -= m.speed * (1 + smoothScroll * 0.6);
+            if (m.z < 40) {
+              m.z = 1150;
+              m.x = (Math.random() - 0.5) * 1400;
+              m.y = (Math.random() - 0.5) * 900;
+            }
+            const proj = project3D(
+              m.x + mouseX * 90,
+              m.y + mouseY * 55 - smoothScroll * 240,
+              m.z,
+              fov
+            );
+            const alpha = Math.max(0.04, Math.min(0.45, (1 - m.z / 1200) * 0.48));
+            const r = Math.max(0.7, m.radius * proj.scale * 1.4);
+            ctx.beginPath();
+            ctx.arc(proj.x, proj.y, r, 0, Math.PI * 2);
+            ctx.fillStyle = m.hue + alpha.toFixed(3) + ")";
+            ctx.fill();
+          }
+        }
+
+        rafId = window.requestAnimationFrame(render3D);
+        document.addEventListener("visibilitychange", function () {
+          if (document.hidden && rafId) {
+            window.cancelAnimationFrame(rafId);
+            rafId = 0;
+          } else if (!document.hidden && !rafId) {
+            rafId = window.requestAnimationFrame(render3D);
+          }
+        });
+      })();
+
+      /* -----------------------------------------
+       * 5. Constructive 3D Scroll Assembly, Progress Bar & Card Tilt
+       * ----------------------------------------- */
+      const scrollProgressEl = document.getElementById("scroll-progress");
+
+      // Assign staggered constructive entrance choreography across all page sections
+      const heroSequence = document.querySelectorAll(".eyebrow, .hero-title, .hero-subtitle, .hero-ctas");
+      heroSequence.forEach(function (el, idx) {
+        el.classList.add("scroll-reveal");
+        el.style.setProperty("--reveal-delay", idx * 90 + "ms");
+      });
+
       const revealTargets = document.querySelectorAll(
-        ".installer-card, .section-head, .stage-shell, .feature-card, .support-banner"
+        ".eyebrow, .hero-title, .hero-subtitle, .hero-ctas, .installer-card, .section-head, .stage-shell, .stage-grid > :first-child, .stage-grid > :last-child, .feature-card, .support-banner, .footer-bar"
       );
 
       revealTargets.forEach(function (el) {
         el.classList.add("scroll-reveal");
-        if (el.classList.contains("feature-card")) {
+        if (el.matches(".stage-grid > :first-child")) {
+          el.classList.add("reveal-left");
+          el.style.setProperty("--reveal-delay", "110ms");
+        } else if (el.matches(".stage-grid > :last-child")) {
+          el.classList.add("reveal-right");
+          el.style.setProperty("--reveal-delay", "190ms");
+        } else if (el.classList.contains("feature-card")) {
           const siblings = Array.prototype.slice.call(el.parentElement ? el.parentElement.children : []);
           const idx = siblings.indexOf(el);
-          el.style.setProperty("--reveal-delay", Math.max(0, idx) * 85 + "ms");
+          el.style.setProperty("--reveal-delay", Math.max(0, idx) * 105 + "ms");
         }
+      });
+
+      // Stagger child elements inside Installer & Feature cards so they "build" sequentially
+      document.querySelectorAll(".installer-card, .feature-card, .support-banner").forEach(function (container) {
+        const inner = container.querySelectorAll(".installer-tabs, .cmd-box, .installer-note, .feature-icon, h3, p, .support-copy, .support-actions");
+        inner.forEach(function (child, i) {
+          child.classList.add("reveal-child");
+          child.style.setProperty("--child-delay", 90 + i * 75 + "ms");
+        });
       });
 
       if (!prefersReducedMotion && "IntersectionObserver" in window) {
@@ -2549,43 +2911,77 @@
             target.classList.add("is-revealed");
             revealObserver.unobserve(target);
 
-            // Subtle celebratory swarm burst on section reveal
-            const rect = target.getBoundingClientRect();
-            if (rect.width > 0 && rect.top > 40 && rect.top < window.innerHeight) {
-              const cx = Math.min(window.innerWidth - 40, Math.max(40, rect.left + rect.width * 0.5));
-              const cy = Math.min(window.innerHeight - 40, Math.max(60, rect.top + 36));
-              spawnSwarmMote(cx - 28, cy, 32);
-              spawnSwarmMote(cx + 28, cy, 32);
+            // Subtle celebratory musical swarm burst as major cards build into view
+            if (
+              target.classList.contains("stage-shell") ||
+              target.classList.contains("feature-card") ||
+              target.classList.contains("support-banner")
+            ) {
+              const rect = target.getBoundingClientRect();
+              if (rect.width > 0 && rect.top > 30 && rect.top < window.innerHeight) {
+                const cx = Math.min(window.innerWidth - 40, Math.max(40, rect.left + rect.width * 0.5));
+                const cy = Math.min(window.innerHeight - 40, Math.max(60, rect.top + 32));
+                spawnSwarmMote(cx - 26, cy, 34);
+                spawnSwarmMote(cx + 26, cy, 34);
+              }
             }
           });
-        }, { threshold: 0.12, rootMargin: "0px 0px -36px 0px" });
+        }, { threshold: 0.1, rootMargin: "0px 0px -32px 0px" });
 
         revealTargets.forEach(function (el) { revealObserver.observe(el); });
       } else {
         revealTargets.forEach(function (el) { el.classList.add("is-revealed"); });
       }
 
-      // Subtle parallax on Chinese ornaments while scrolling
+      // Interactive subtle 3D tilt + specular glass sheen on Feature cards
+      if (!prefersReducedMotion) {
+        document.querySelectorAll(".feature-card").forEach(function (card) {
+          card.addEventListener("pointermove", function (e) {
+            if (e.pointerType === "touch") return;
+            const rect = card.getBoundingClientRect();
+            const px = (e.clientX - rect.left) / Math.max(1, rect.width);
+            const py = (e.clientY - rect.top) / Math.max(1, rect.height);
+            card.style.setProperty("--mx", Math.round(px * 100) + "%");
+            card.style.setProperty("--my", Math.round(py * 100) + "%");
+            const rx = (0.5 - py) * 6;
+            const ry = (px - 0.5) * 6;
+            card.style.transform =
+              "perspective(900px) rotateX(" + rx.toFixed(2) + "deg) rotateY(" + ry.toFixed(2) + "deg) translateY(-4px)";
+          }, { passive: true });
+
+          card.addEventListener("pointerleave", function () {
+            card.style.transform = "";
+          }, { passive: true });
+        });
+      }
+
+      // Continuous Scroll Progress Bar + Chinese Ornament Parallax
       const parallaxNodes = document.querySelectorAll("[data-parallax]");
-      if (!prefersReducedMotion && parallaxNodes.length > 0) {
-        let parallaxRaf = 0;
-        const updateParallax = function () {
-          parallaxRaf = 0;
-          const sy = window.scrollY || window.pageYOffset || 0;
+      let scrollRaf = 0;
+      const updateOnScroll = function () {
+        scrollRaf = 0;
+        const sy = window.scrollY || window.pageYOffset || 0;
+        const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+        if (scrollProgressEl) {
+          const prog = Math.min(1, Math.max(0, sy / maxScroll));
+          scrollProgressEl.style.transform = "scaleX(" + prog.toFixed(4) + ")";
+        }
+        if (!prefersReducedMotion && parallaxNodes.length > 0) {
           parallaxNodes.forEach(function (node) {
             const speed = parseFloat(node.getAttribute("data-parallax") || "0");
             const offset = Math.round(sy * speed * -1);
             const baseRot = node.classList.contains("cn-lattice-corner--br") ? " rotate(180deg)" : "";
             node.style.transform = "translate3d(0, " + offset + "px, 0)" + baseRot;
           });
-        };
-        window.addEventListener("scroll", function () {
-          if (!parallaxRaf) parallaxRaf = window.requestAnimationFrame(updateParallax);
-        }, { passive: true });
-      }
+        }
+      };
+      updateOnScroll();
+      window.addEventListener("scroll", function () {
+        if (!scrollRaf) scrollRaf = window.requestAnimationFrame(updateOnScroll);
+      }, { passive: true });
 
       /* -----------------------------------------
-       * 5. Live GitHub Star Count (graceful fallback)
+       * 6. Live GitHub Star Count (graceful fallback)
        * ----------------------------------------- */
       (function fetchGitHubStars() {
         const badges = document.querySelectorAll("[data-star-count]");
