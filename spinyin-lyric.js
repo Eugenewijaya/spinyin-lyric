@@ -1,7 +1,7 @@
 // NAME: Spinyin-lyric for Spotify
 // AUTHOR: Eugenewijaya
-// VERSION: 1.1.0
-// DESCRIPTION: Real-time offline Mandarin (Hanzi) to Pinyin smart lyrics for Spotify, Liquid Lyrics, Beautiful Lyrics, Spicy Lyrics, and Lyrics Plus.
+// VERSION: 2.0.0
+// DESCRIPTION: Standalone Liquid Glass lyrics stage and 100% offline Mandarin (Hanzi) to Pinyin smart lyrics for Spotify.
 // REPOSITORY: https://github.com/Eugenewijaya/spinyin-lyric
 
 if (typeof window !== "undefined" && !window.pinyinPro) {
@@ -18,8 +18,8 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
 }
 
 // =============================================================================
-// Spinyin-lyric for Spotify (v1.0.0)
-// Real-time offline Mandarin (Hanzi) -> Pinyin Smart Lyrics for Spotify
+// Spinyin-lyric for Spotify (v2.0.0)
+// Real-time offline Mandarin (Hanzi) -> Pinyin Smart Lyrics & Liquid Glass Stage
 // Repository: https://github.com/Eugenewijaya/spinyin-lyric
 // =============================================================================
 
@@ -27,12 +27,14 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
   if (window.__spinyinLyricLoaded) return;
   window.__spinyinLyricLoaded = true;
 
-  const VERSION = "1.1.0";
+  const VERSION = "2.0.0";
   const REPO_URL = "https://github.com/Eugenewijaya/spinyin-lyric";
   const STORAGE_PREFIX = "spinyin:";
   const LEGACY_PREFIX = "mandarin-pinyin:";
   const HANZI_REGEX = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/;
   const CACHE_LIMIT = 5000;
+  const LYRICS_CACHE_LIMIT = 60;
+  const SVG_NS = "http://www.w3.org/2000/svg";
 
   // Universal lyrics selectors: Spotify Native, Liquid Lyrics, Beautiful Lyrics,
   // Spicy Lyrics, Lyrics Plus, and generic lyrics extensions
@@ -91,6 +93,11 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     { id: "pinyin-only", label: "Pinyin Only (Main)", short: "Pinyin Only" },
   ];
 
+  const BACKDROP_OPTIONS = [
+    { id: "ambient", label: "Ambient" },
+    { id: "low-ram", label: "Low RAM" },
+  ];
+
   // --- Safe LocalStorage with automatic legacy migration ---
   function storageGet(key) {
     try {
@@ -125,6 +132,7 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     translateTitles: readBool("titles", true),
     toneType: storageGet("toneType") || "symbol",
     displayMode: storageGet("displayMode") || "dual",
+    backdropMode: storageGet("backdrop") || "ambient",
   };
 
   if (!TONE_OPTIONS.some((t) => t.id === state.toneType)) {
@@ -133,6 +141,9 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
   if (!DISPLAY_MODES.some((m) => m.id === state.displayMode)) {
     state.displayMode = "dual";
   }
+  if (!BACKDROP_OPTIONS.some((b) => b.id === state.backdropMode)) {
+    state.backdropMode = "ambient";
+  }
 
   function saveState() {
     storageSet("enabled", state.enabled ? "1" : "0");
@@ -140,6 +151,15 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     storageSet("titles", state.translateTitles ? "1" : "0");
     storageSet("toneType", state.toneType);
     storageSet("displayMode", state.displayMode);
+    storageSet("backdrop", state.backdropMode);
+  }
+
+  function prefersReducedMotion() {
+    try {
+      return Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
+    } catch {
+      return false;
+    }
   }
 
   // --- Offline Pinyin Engine (uses bundled window.pinyinPro) ---
@@ -186,6 +206,132 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     });
   }
 
+  // --- Safe SVG DOM Helper (zero innerHTML) ---
+  function makeSvgIcon(nodes, size = 16, viewBox = "0 0 24 24", strokeMode = false) {
+    const svg = document.createElementNS(SVG_NS, "svg");
+    svg.setAttribute("width", String(size));
+    svg.setAttribute("height", String(size));
+    svg.setAttribute("viewBox", viewBox);
+    svg.setAttribute("aria-hidden", "true");
+    if (strokeMode) {
+      svg.setAttribute("fill", "none");
+      svg.setAttribute("stroke", "currentColor");
+      svg.setAttribute("stroke-width", "2");
+      svg.setAttribute("stroke-linecap", "round");
+      svg.setAttribute("stroke-linejoin", "round");
+    } else {
+      svg.setAttribute("fill", "currentColor");
+    }
+    for (const [tag, attrs] of nodes) {
+      const el = document.createElementNS(SVG_NS, tag);
+      for (const [k, v] of Object.entries(attrs)) {
+        el.setAttribute(k, String(v));
+      }
+      svg.appendChild(el);
+    }
+    return svg;
+  }
+
+  const ICONS = {
+    prev: () =>
+      makeSvgIcon([
+        ["path", { d: "M6 5h2v14H6V5zm3.5 7 9.5 6.5V5.5L9.5 12z" }],
+      ], 20),
+    next: () =>
+      makeSvgIcon([
+        ["path", { d: "M16 5h2v14h-2V5zM5 18.5 14.5 12 5 5.5v13z" }],
+      ], 20),
+    play: () =>
+      makeSvgIcon([
+        ["path", { d: "M7.5 5.25 19 12 7.5 18.75V5.25z" }],
+      ], 22),
+    pause: () =>
+      makeSvgIcon([
+        ["rect", { x: "6", y: "5", width: "4.5", height: "14", rx: "1.2" }],
+        ["rect", { x: "13.5", y: "5", width: "4.5", height: "14", rx: "1.2" }],
+      ], 22),
+    fullscreen: () =>
+      makeSvgIcon(
+        [
+          ["path", { d: "M8 3H5a2 2 0 0 0-2 2v3" }],
+          ["path", { d: "M21 8V5a2 2 0 0 0-2-2h-3" }],
+          ["path", { d: "M3 16v3a2 2 0 0 0 2 2h3" }],
+          ["path", { d: "M16 21h3a2 2 0 0 0 2-2v-3" }],
+        ],
+        15,
+        "0 0 24 24",
+        true,
+      ),
+    exitFullscreen: () =>
+      makeSvgIcon(
+        [
+          ["path", { d: "M4 14h6v6" }],
+          ["path", { d: "M20 10h-6V4" }],
+          ["path", { d: "M14 10l7-7" }],
+          ["path", { d: "M3 21l7-7" }],
+        ],
+        15,
+        "0 0 24 24",
+        true,
+      ),
+    close: () =>
+      makeSvgIcon(
+        [
+          ["path", { d: "M18 6 6 18" }],
+          ["path", { d: "m6 6 12 12" }],
+        ],
+        16,
+        "0 0 24 24",
+        true,
+      ),
+    musicNote: () =>
+      makeSvgIcon(
+        [
+          ["path", { d: "M9 18V5l12-2v13" }],
+          ["circle", { cx: "6", cy: "18", r: "3" }],
+          ["circle", { cx: "18", cy: "16", r: "3" }],
+        ],
+        42,
+        "0 0 24 24",
+        true,
+      ),
+    brandMark: () =>
+      makeSvgIcon(
+        [
+          ["rect", { x: "2", y: "2", width: "20", height: "20", rx: "6", fill: "rgba(30,215,96,0.18)", stroke: "rgba(30,215,96,0.55)", "stroke-width": "1.2" }],
+          ["path", { d: "M7 9.5h10M7 14h6.5", stroke: "#ffffff", "stroke-width": "1.8", "stroke-linecap": "round", fill: "none" }],
+          ["path", { d: "M15.2 13.4c.7-.9 1.6-.9 2.3 0", stroke: "#1ed760", "stroke-width": "1.8", "stroke-linecap": "round", fill: "none" }],
+        ],
+        20,
+      ),
+  };
+
+  function sanitizeImageUrl(url) {
+    if (typeof url !== "string") return "";
+    const trimmed = url.trim();
+    if (!trimmed) return "";
+    if (trimmed.startsWith("spotify:image:")) {
+      const hash = trimmed.slice("spotify:image:".length).replace(/[^a-zA-Z0-9_-]/g, "");
+      return hash ? `https://i.scdn.co/image/${hash}` : "";
+    }
+    if (trimmed.startsWith("spotify:mosaic:")) {
+      const hash = trimmed.slice("spotify:mosaic:".length).replace(/[^a-zA-Z0-9_-]/g, "");
+      return hash ? `https://mosaic.scdn.co/640/${hash}` : "";
+    }
+    if (/^https?:\/\/[^\s"'<>\\]+$/i.test(trimmed)) {
+      return trimmed;
+    }
+    return "";
+  }
+
+  function formatTime(ms) {
+    const safeMs = Number.isFinite(ms) && ms > 0 ? ms : 0;
+    const totalSec = Math.floor(safeMs / 1000);
+    const mins = Math.floor(totalSec / 60);
+    const secs = totalSec % 60;
+    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+  }
+
   // --- Styles & Refined Motion (CSS ::after never mutates React DOM nodes) ---
   function injectStyles() {
     if (document.getElementById("spinyin-lyric-styles")) return;
@@ -220,6 +366,15 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
         }
         50% {
           box-shadow: 0 0 0 5px rgba(30, 215, 96, 0);
+        }
+      }
+
+      @keyframes spinyinShimmer {
+        0% {
+          background-position: -220% 0;
+        }
+        100% {
+          background-position: 220% 0;
         }
       }
 
@@ -383,7 +538,7 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
         position: fixed;
         right: 24px;
         bottom: 104px;
-        z-index: 9999;
+        z-index: 8500;
         display: none;
         align-items: center;
         gap: 6px;
@@ -444,6 +599,666 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
       .spinyin-pill-chip.is-on .spinyin-pill-dot {
         background: #1ed760;
         animation: spinyinDotPulse 2.4s ease-in-out infinite;
+      }
+
+      /* =====================================================================
+         Standalone Liquid Glass Lyrics Stage (v2.0.0)
+         ===================================================================== */
+      .spinyin-stage {
+        position: fixed;
+        inset: 0;
+        z-index: 9000;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        background: #0a0c10;
+        color: #ffffff;
+        font-family: var(--encore-body-font-stack, "CircularSp", "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif);
+        -webkit-font-smoothing: antialiased;
+        text-rendering: geometricPrecision;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateY(10px);
+        transition: opacity 0.24s cubic-bezier(0.22, 1, 0.36, 1), transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.24s;
+      }
+
+      .spinyin-stage.is-open {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateY(0);
+      }
+
+      .spinyin-stage[data-backdrop="low-ram"] {
+        background: radial-gradient(ellipse at 22% 18%, #181d25 0%, #0e1117 55%, #090b0f 100%);
+      }
+
+      /* Adaptive ambient backdrop — low-cost GPU layer, zero WebGL */
+      .spinyin-stage-bg {
+        position: absolute;
+        inset: -12%;
+        z-index: 0;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        filter: blur(72px) saturate(1.35) brightness(0.45);
+        transform: scale(1.12) translateZ(0);
+        pointer-events: none;
+        transition: opacity 0.5s ease;
+      }
+
+      .spinyin-stage[data-backdrop="low-ram"] .spinyin-stage-bg {
+        display: none !important;
+      }
+
+      .spinyin-stage-scrim {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        background:
+          radial-gradient(circle at 20% 30%, rgba(16, 20, 28, 0.22) 0%, rgba(8, 10, 15, 0.72) 78%),
+          linear-gradient(180deg, rgba(8, 10, 15, 0.36) 0%, rgba(8, 10, 15, 0.16) 45%, rgba(8, 10, 15, 0.48) 100%);
+      }
+
+      .spinyin-stage[data-backdrop="low-ram"] .spinyin-stage-scrim {
+        display: none;
+      }
+
+      /* Top bar */
+      .spinyin-stage-topbar {
+        position: relative;
+        z-index: 3;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px clamp(18px, 3vw, 36px) 10px;
+        flex-shrink: 0;
+        user-select: none;
+      }
+
+      .spinyin-stage-brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        min-width: 0;
+      }
+
+      .spinyin-stage-wordmark {
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        color: rgba(255, 255, 255, 0.92);
+      }
+
+      .spinyin-stage-source {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 9px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.68);
+        white-space: nowrap;
+      }
+
+      .spinyin-stage-source:empty {
+        display: none;
+      }
+
+      .spinyin-stage-controls {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .spinyin-glass-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        height: 34px;
+        padding: 0 13px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.13);
+        background: rgba(255, 255, 255, 0.075);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        color: rgba(255, 255, 255, 0.88);
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        cursor: pointer;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.12s ease;
+      }
+
+      .spinyin-stage[data-backdrop="low-ram"] .spinyin-glass-btn {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .spinyin-glass-btn:hover {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: rgba(255, 255, 255, 0.24);
+        color: #ffffff;
+      }
+
+      .spinyin-glass-btn:active {
+        transform: scale(0.96);
+      }
+
+      .spinyin-glass-btn.is-active {
+        background: rgba(30, 215, 96, 0.2);
+        border-color: rgba(30, 215, 96, 0.45);
+        color: #7bf0a5;
+      }
+
+      .spinyin-glass-icon-btn {
+        width: 34px;
+        padding: 0;
+      }
+
+      /* Two-column responsive body */
+      .spinyin-stage-body {
+        position: relative;
+        z-index: 2;
+        flex: 1;
+        min-height: 0;
+        width: 100%;
+        max-width: 1380px;
+        margin: 0 auto;
+        padding: 12px clamp(20px, 4vw, 52px) 28px;
+        box-sizing: border-box;
+        display: grid;
+        grid-template-columns: minmax(290px, 372px) minmax(0, 1fr);
+        gap: clamp(28px, 4.5vw, 68px);
+        align-items: center;
+      }
+
+      /* Left Liquid Glass Track Card */
+      .spinyin-track-card {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        padding: 22px;
+        border-radius: 26px;
+        background: rgba(255, 255, 255, 0.068);
+        backdrop-filter: blur(30px) saturate(1.25);
+        -webkit-backdrop-filter: blur(30px) saturate(1.25);
+        border: 1px solid rgba(255, 255, 255, 0.13);
+        box-shadow:
+          0 24px 64px rgba(0, 0, 0, 0.36),
+          inset 0 1px 0 rgba(255, 255, 255, 0.16);
+        user-select: none;
+      }
+
+      .spinyin-stage[data-backdrop="low-ram"] .spinyin-track-card {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        background: rgba(24, 28, 36, 0.92);
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.42);
+      }
+
+      .spinyin-art-wrap {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        border-radius: 16px;
+        overflow: hidden;
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+        box-shadow: 0 16px 38px rgba(0, 0, 0, 0.42);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: rgba(255, 255, 255, 0.26);
+      }
+
+      .spinyin-art-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .spinyin-art-img[hidden] {
+        display: none;
+      }
+
+      .spinyin-track-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
+      }
+
+      .spinyin-stage-title {
+        font-size: clamp(19px, 1.65vw, 24px);
+        font-weight: 700;
+        line-height: 1.24;
+        letter-spacing: -0.02em;
+        color: #ffffff;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+      }
+
+      .spinyin-stage-title-py {
+        font-size: 13px;
+        font-weight: 500;
+        line-height: 1.38;
+        letter-spacing: 0.015em;
+        color: rgba(255, 255, 255, 0.78);
+      }
+
+      .spinyin-stage-title-py:empty {
+        display: none;
+      }
+
+      .spinyin-stage-artist {
+        margin-top: 2px;
+        font-size: 14px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.68);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .spinyin-stage-artist-py {
+        font-size: 12px;
+        font-weight: 400;
+        color: rgba(255, 255, 255, 0.54);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .spinyin-stage-artist-py:empty {
+        display: none;
+      }
+
+      /* Scrubber */
+      .spinyin-scrubber-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .spinyin-scrubber-hit {
+        position: relative;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        touch-action: none;
+        outline: none;
+      }
+
+      .spinyin-scrubber-track {
+        position: relative;
+        width: 100%;
+        height: 5px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.16);
+        overflow: visible;
+        transition: height 0.14s ease;
+      }
+
+      .spinyin-scrubber-hit:hover .spinyin-scrubber-track,
+      .spinyin-scrubber-hit:focus-visible .spinyin-scrubber-track,
+      .spinyin-scrubber-hit.is-dragging .spinyin-scrubber-track {
+        height: 7px;
+      }
+
+      .spinyin-scrubber-fill {
+        position: relative;
+        height: 100%;
+        width: 0%;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.92);
+      }
+
+      .spinyin-scrubber-thumb {
+        position: absolute;
+        right: -6px;
+        top: 50%;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #ffffff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+        transform: translateY(-50%) scale(0);
+        transition: transform 0.14s ease;
+      }
+
+      .spinyin-scrubber-hit:hover .spinyin-scrubber-thumb,
+      .spinyin-scrubber-hit:focus-visible .spinyin-scrubber-thumb,
+      .spinyin-scrubber-hit.is-dragging .spinyin-scrubber-thumb {
+        transform: translateY(-50%) scale(1);
+      }
+
+      .spinyin-time-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        color: rgba(255, 255, 255, 0.56);
+      }
+
+      /* Playback buttons */
+      .spinyin-transport {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+      }
+
+      .spinyin-transport-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: none;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.82);
+        cursor: pointer;
+        transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease;
+      }
+
+      .spinyin-transport-btn:hover {
+        background: rgba(255, 255, 255, 0.12);
+        color: #ffffff;
+      }
+
+      .spinyin-transport-btn:active {
+        transform: scale(0.92);
+      }
+
+      .spinyin-transport-play {
+        width: 52px;
+        height: 52px;
+        background: rgba(255, 255, 255, 0.94);
+        color: #0d1015;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      }
+
+      .spinyin-transport-play:hover {
+        background: #ffffff;
+        color: #000000;
+        transform: scale(1.04);
+      }
+
+      /* Right/Center Lyrics Scroller — CRISP ZERO-BLUR RENDERING */
+      .spinyin-lyrics-pane {
+        position: relative;
+        height: 100%;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .spinyin-lyrics-scroll {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 34vh 14px 40vh 4px;
+        box-sizing: border-box;
+        scrollbar-width: none;
+        -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 11%, #000 84%, transparent 100%);
+        mask-image: linear-gradient(to bottom, transparent 0%, #000 11%, #000 84%, transparent 100%);
+      }
+
+      .spinyin-lyrics-scroll::-webkit-scrollbar {
+        display: none;
+      }
+
+      .spinyin-lyrics-list {
+        display: flex;
+        flex-direction: column;
+        gap: clamp(14px, 1.9vh, 22px);
+      }
+
+      .spinyin-sline {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        width: 100%;
+        text-align: left;
+        border: none;
+        background: transparent;
+        padding: 10px 16px;
+        margin: 0;
+        border-radius: 16px;
+        font-family: inherit;
+        color: rgba(255, 255, 255, 0.42);
+        transform-origin: left center;
+        transform: scale(0.985);
+        transition: color 0.24s ease, background 0.18s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      .spinyin-sline.is-clickable {
+        cursor: pointer;
+      }
+
+      .spinyin-sline.is-clickable:hover {
+        background: rgba(255, 255, 255, 0.065);
+        color: rgba(255, 255, 255, 0.86);
+      }
+
+      .spinyin-sline.is-past {
+        color: rgba(255, 255, 255, 0.56);
+      }
+
+      .spinyin-sline.is-future {
+        color: rgba(255, 255, 255, 0.38);
+      }
+
+      .spinyin-sline.is-plain {
+        color: rgba(255, 255, 255, 0.86);
+        transform: none;
+      }
+
+      .spinyin-sline.is-active {
+        color: #ffffff;
+        transform: scale(1.015);
+        text-shadow: 0 2px 18px rgba(0, 0, 0, 0.28);
+      }
+
+      .spinyin-sline-orig {
+        font-size: clamp(22px, 2.35vw, 34px);
+        font-weight: 700;
+        line-height: 1.32;
+        letter-spacing: -0.015em;
+        word-break: break-word;
+      }
+
+      .spinyin-sline-py {
+        margin-top: 5px;
+        font-size: clamp(13px, 1.15vw, 17px);
+        font-weight: 500;
+        line-height: 1.45;
+        letter-spacing: 0.02em;
+        color: currentColor;
+        opacity: 0.82;
+        word-break: break-word;
+      }
+
+      .spinyin-sline-py:empty {
+        display: none;
+      }
+
+      .spinyin-sline.is-active .spinyin-sline-py {
+        opacity: 0.94;
+      }
+
+      /* Stage Pinyin-Only mode: hide Hanzi on lines with Pinyin, promote Pinyin to primary */
+      .spinyin-stage[data-mode="pinyin-only"] .spinyin-sline[data-has-pinyin="1"] .spinyin-sline-orig {
+        display: none;
+      }
+
+      .spinyin-stage[data-mode="pinyin-only"] .spinyin-sline[data-has-pinyin="1"] .spinyin-sline-py {
+        margin-top: 0;
+        font-size: clamp(21px, 2.2vw, 32px);
+        font-weight: 700;
+        line-height: 1.34;
+        letter-spacing: 0.005em;
+        opacity: 1;
+      }
+
+      /* Loading skeleton & empty state */
+      .spinyin-skeleton-list {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        padding-top: 4vh;
+      }
+
+      .spinyin-skeleton-bar {
+        height: 28px;
+        border-radius: 10px;
+        background: linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 0.06) 25%,
+          rgba(255, 255, 255, 0.14) 50%,
+          rgba(255, 255, 255, 0.06) 75%
+        );
+        background-size: 220% 100%;
+        animation: spinyinShimmer 1.6s ease-in-out infinite;
+      }
+
+      .spinyin-empty-state {
+        margin: auto 0;
+        padding: 32px 28px;
+        max-width: 440px;
+        border-radius: 22px;
+        background: rgba(255, 255, 255, 0.055);
+        border: 1px solid rgba(255, 255, 255, 0.11);
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .spinyin-empty-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #ffffff;
+      }
+
+      .spinyin-empty-desc {
+        font-size: 14px;
+        line-height: 1.55;
+        color: rgba(255, 255, 255, 0.68);
+      }
+
+      .spinyin-empty-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 6px;
+      }
+
+      .spinyin-resync-btn {
+        position: absolute;
+        right: 16px;
+        bottom: 18px;
+        z-index: 4;
+        display: none;
+      }
+
+      .spinyin-resync-btn.is-visible {
+        display: inline-flex;
+      }
+
+      /* Responsive collapse on narrow windows */
+      @media (max-width: 899px) {
+        .spinyin-stage-body {
+          grid-template-columns: 1fr;
+          grid-template-rows: auto minmax(0, 1fr);
+          gap: 16px;
+          align-items: stretch;
+          padding: 8px 18px 20px;
+        }
+
+        .spinyin-track-card {
+          display: grid;
+          grid-template-columns: 72px minmax(0, 1fr);
+          grid-template-rows: auto auto auto;
+          column-gap: 16px;
+          row-gap: 10px;
+          align-items: center;
+          padding: 14px 16px;
+          border-radius: 20px;
+        }
+
+        .spinyin-art-wrap {
+          width: 72px;
+          height: 72px;
+          border-radius: 12px;
+          grid-row: 1 / 2;
+          grid-column: 1 / 2;
+        }
+
+        .spinyin-track-meta {
+          grid-row: 1 / 2;
+          grid-column: 2 / 3;
+        }
+
+        .spinyin-stage-title {
+          font-size: 17px;
+          -webkit-line-clamp: 1;
+        }
+
+        .spinyin-scrubber-wrap {
+          grid-row: 2 / 3;
+          grid-column: 1 / 3;
+        }
+
+        .spinyin-transport {
+          grid-row: 3 / 4;
+          grid-column: 1 / 3;
+          gap: 14px;
+        }
+
+        .spinyin-transport-play {
+          width: 44px;
+          height: 44px;
+        }
+
+        .spinyin-lyrics-scroll {
+          padding: 20vh 6px 28vh 0;
+        }
+      }
+
+      @media (max-width: 600px) {
+        .spinyin-stage-topbar {
+          flex-wrap: wrap;
+          padding: 12px 14px 6px;
+        }
+
+        .spinyin-glass-btn {
+          height: 31px;
+          padding: 0 10px;
+          font-size: 11px;
+        }
+
+        .spinyin-glass-icon-btn {
+          width: 31px;
+          padding: 0;
+        }
       }
 
       /* Spinyin Studio Modal */
@@ -699,7 +1514,13 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
       @media (prefers-reduced-motion: reduce) {
         html.spinyin-enabled.spinyin-lyrics [data-spinyin-kind="lyric"][data-spinyin]::after,
         .spinyin-pill.is-visible,
-        .spinyin-pill-chip.is-on .spinyin-pill-dot {
+        .spinyin-pill-chip.is-on .spinyin-pill-dot,
+        .spinyin-stage,
+        .spinyin-stage-bg,
+        .spinyin-sline,
+        .spinyin-skeleton-bar,
+        .spinyin-glass-btn,
+        .spinyin-transport-btn {
           animation: none !important;
           transition: none !important;
         }
@@ -792,7 +1613,14 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
   }
 
   function annotateElement(el, kind) {
-    if (!el || el.closest?.(".spinyin-modal") || el.closest?.(".spinyin-pill")) return;
+    if (
+      !el ||
+      el.closest?.(".spinyin-modal") ||
+      el.closest?.(".spinyin-pill") ||
+      el.closest?.(".spinyin-stage")
+    ) {
+      return;
+    }
 
     const text = kind === "lyric" ? extractCleanText(el) : (el.textContent || "").trim();
     const sig = `${state.toneType}|${text}`;
@@ -866,6 +1694,7 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
 
     if (lyricNodes.length > 0) {
       lyricNodes.forEach((el) => {
+        if (el.closest?.(".spinyin-stage")) return;
         if (el.querySelector?.(LYRIC_SELECTORS)) return;
         const existingRom = el.querySelector?.(".liquid-lyrics-romanization, .Romanized");
         if (existingRom && (existingRom.textContent || "").trim().length > 0) {
@@ -882,7 +1711,7 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     }
 
     if (pillRoot) {
-      pillRoot.classList.toggle("is-visible", hasChineseLyricsOnScreen);
+      pillRoot.classList.toggle("is-visible", !stageOpen && hasChineseLyricsOnScreen);
     }
 
     if (state.enabled && state.translateTitles) {
@@ -915,10 +1744,16 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
       delete el.dataset.spinyinSig;
     });
     scheduleScan(20);
+    if (stageOpen) {
+      refreshStagePinyin();
+      syncStageControls();
+    }
   }
 
   // --- Shared UI State Sync ---
-  let playbarButton = null;
+  let playbarStageButton = null;
+  let playbarStudioButton = null;
+  let menuOpenStage = null;
   let menuToggleEnabled = null;
   let menuToggleLyrics = null;
   let menuToggleTitles = null;
@@ -932,7 +1767,9 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
   }
 
   function syncMenuAndButtonState() {
-    if (playbarButton) playbarButton.active = state.enabled;
+    if (playbarStageButton) playbarStageButton.active = stageOpen;
+    if (playbarStudioButton) playbarStudioButton.active = state.enabled;
+    if (menuOpenStage) menuOpenStage.setState(stageOpen);
     if (menuToggleEnabled) menuToggleEnabled.setState(state.enabled);
     if (menuToggleLyrics) menuToggleLyrics.setState(state.translateLyrics);
     if (menuToggleTitles) menuToggleTitles.setState(state.translateTitles);
@@ -943,6 +1780,7 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
       item.setState(state.toneType === toneId);
     }
     syncFloatingPill();
+    syncStageControls();
   }
 
   function setEnabled(next) {
@@ -970,19 +1808,1073 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     refreshAllAnnotations();
   }
 
-  // --- Current Track & Studio Modal ---
+  function setBackdropMode(modeId) {
+    if (!BACKDROP_OPTIONS.some((b) => b.id === modeId)) return;
+    state.backdropMode = modeId;
+    saveState();
+    syncStageControls();
+    updateStageBackdrop();
+    notify(modeId === "low-ram" ? "Stage Backdrop: Low RAM (Static Dark)" : "Stage Backdrop: Adaptive Ambient");
+  }
+
+  // --- Current Track Info ---
   function getCurrentTrackInfo() {
-    const meta = window.Spicetify?.Player?.data?.item?.metadata;
-    if (!meta) return { title: "", artist: "" };
+    const item = window.Spicetify?.Player?.data?.item;
+    const meta = item?.metadata;
+    if (!meta) {
+      return {
+        uri: "",
+        trackId: "",
+        title: "",
+        artist: "",
+        primaryArtist: "",
+        album: "",
+        durationMs: 0,
+        coverUrl: "",
+      };
+    }
+
+    const uri = item?.uri || "";
+    const match = uri.match(/^spotify:track:([a-zA-Z0-9]+)$/);
+    const trackId = match ? match[1] : "";
     const title = meta.title || "";
     const artists = [];
     for (let i = 0; i < 6; i++) {
       const key = i === 0 ? "artist_name" : `artist_name:${i}`;
       if (meta[key]) artists.push(meta[key]);
     }
-    return { title, artist: artists.join(", ") };
+
+    const rawCover =
+      meta.image_xlarge_url ||
+      meta.image_large_url ||
+      meta.image_url ||
+      meta.image_small_url ||
+      "";
+
+    const durationMs =
+      Number(window.Spicetify?.Player?.getDuration?.()) ||
+      Number(window.Spicetify?.Player?.data?.duration) ||
+      Number(meta.duration) ||
+      0;
+
+    return {
+      uri,
+      trackId,
+      title,
+      artist: artists.join(", "),
+      primaryArtist: artists[0] || "",
+      album: meta.album_title || "",
+      durationMs: Number.isFinite(durationMs) && durationMs > 0 ? durationMs : 0,
+      coverUrl: sanitizeImageUrl(rawCover),
+    };
   }
 
+  // --- Multi-Provider Synced Lyrics Fetcher (Spotify Native -> LRCLIB Exact -> LRCLIB Search) ---
+  const trackLyricsCache = new Map();
+
+  function getTrackCacheKey(info) {
+    if (info.trackId) return `sp:${info.trackId}`;
+    return `meta:${info.title}|${info.primaryArtist}|${Math.round((info.durationMs || 0) / 1000)}`;
+  }
+
+  function cacheLyrics(key, payload) {
+    if (trackLyricsCache.size >= LYRICS_CACHE_LIMIT) {
+      const oldest = trackLyricsCache.keys().next().value;
+      trackLyricsCache.delete(oldest);
+    }
+    trackLyricsCache.set(key, payload);
+  }
+
+  function parseLrc(lrcText) {
+    if (typeof lrcText !== "string" || !lrcText.trim()) return [];
+    let offsetMs = 0;
+    const rawLines = lrcText.split(/\r?\n/);
+    const parsed = [];
+
+    for (const raw of rawLines) {
+      const offsetMatch = raw.match(/^\s*\[offset:\s*([+-]?\d+)\s*\]\s*$/i);
+      if (offsetMatch) {
+        offsetMs = parseInt(offsetMatch[1], 10) || 0;
+        continue;
+      }
+
+      const timestamps = [];
+      const tagRegex = /\[(\d{1,3}):(\d{2})(?:[.:](\d{1,3}))?\]/g;
+      let match;
+      while ((match = tagRegex.exec(raw)) !== null) {
+        const mins = parseInt(match[1], 10) || 0;
+        const secs = parseInt(match[2], 10) || 0;
+        let ms = 0;
+        if (match[3]) {
+          if (match[3].length === 1) ms = parseInt(match[3], 10) * 100;
+          else if (match[3].length === 2) ms = parseInt(match[3], 10) * 10;
+          else ms = parseInt(match[3].slice(0, 3), 10);
+        }
+        timestamps.push(Math.max(0, mins * 60000 + secs * 1000 + ms - offsetMs));
+      }
+
+      if (timestamps.length === 0) continue;
+      const text = raw.replace(tagRegex, "").trim();
+      if (!text) continue;
+      for (const timeMs of timestamps) {
+        parsed.push({ timeMs, text });
+      }
+    }
+
+    parsed.sort((a, b) => a.timeMs - b.timeMs);
+    return parsed;
+  }
+
+  function parsePlainLyrics(plainText) {
+    if (typeof plainText !== "string" || !plainText.trim()) return [];
+    return plainText
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((text) => ({ timeMs: null, text }));
+  }
+
+  function cleanSearchTitle(title) {
+    if (!title) return "";
+    const cleaned = title
+      .replace(/\s*[\(\[](?:[^)\]]*(?:remaster|live|version|ver\.|edit|feat\.?|ft\.?|bonus|deluxe|mono|stereo)[^)\]]*)[\)\]]/gi, "")
+      .replace(/\s*-\s*(?:\d{4}\s*)?(?:remaster(?:ed)?|live|single version|radio edit|acoustic).*$/i, "")
+      .trim();
+    return cleaned || title;
+  }
+
+  async function fetchJsonWithTimeout(url, signal, timeoutMs = 8000) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    const onParentAbort = () => ctrl.abort();
+    if (signal) {
+      if (signal.aborted) {
+        clearTimeout(timer);
+        throw new DOMException("Aborted", "AbortError");
+      }
+      signal.addEventListener("abort", onParentAbort, { once: true });
+    }
+    try {
+      const res = await fetch(url, {
+        signal: ctrl.signal,
+        headers: { Accept: "application/json" },
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } finally {
+      clearTimeout(timer);
+      if (signal) signal.removeEventListener("abort", onParentAbort);
+    }
+  }
+
+  async function fetchSpotifyNativeLyrics(trackId) {
+    if (!trackId || !window.Spicetify?.CosmosAsync?.get) return null;
+    try {
+      const url = `https://spclient.wg.spotify.com/color-lyrics/v2/track/${encodeURIComponent(trackId)}?format=json&market=from_token`;
+      const data = await window.Spicetify.CosmosAsync.get(url);
+      const rawLines = data?.lyrics?.lines;
+      if (!Array.isArray(rawLines) || rawLines.length === 0) return null;
+
+      const synced = data.lyrics.syncType === "LINE_SYNCED";
+      const lines = rawLines
+        .map((item) => ({
+          timeMs: synced ? Number(item.startTimeMs) || 0 : null,
+          text: String(item.words || "").trim(),
+        }))
+        .filter((item) => item.text.length > 0);
+
+      if (lines.length === 0) return null;
+      return { status: "ok", synced, lines, source: synced ? "Spotify Synced" : "Spotify Plain" };
+    } catch {
+      return null;
+    }
+  }
+
+  async function fetchLrclibExact(info, signal) {
+    if (!info.title || !info.primaryArtist) return null;
+    try {
+      const params = new URLSearchParams();
+      params.set("track_name", info.title);
+      params.set("artist_name", info.primaryArtist);
+      if (info.durationMs > 0) {
+        params.set("duration", String(Math.round(info.durationMs / 1000)));
+      }
+      const data = await fetchJsonWithTimeout(`https://lrclib.net/api/get?${params.toString()}`, signal);
+      if (!data || data.instrumental) return null;
+
+      if (data.syncedLyrics) {
+        const lines = parseLrc(data.syncedLyrics);
+        if (lines.length > 0) {
+          return { status: "ok", synced: true, lines, source: "LRCLIB Synced" };
+        }
+      }
+      if (data.plainLyrics) {
+        const lines = parsePlainLyrics(data.plainLyrics);
+        if (lines.length > 0) {
+          return { status: "ok", synced: false, lines, source: "LRCLIB Plain" };
+        }
+      }
+      return null;
+    } catch (err) {
+      if (err?.name === "AbortError") throw err;
+      return null;
+    }
+  }
+
+  async function fetchLrclibSearch(info, signal) {
+    const query = [cleanSearchTitle(info.title), info.primaryArtist].filter(Boolean).join(" ").trim();
+    if (!query) return null;
+    try {
+      const params = new URLSearchParams({ q: query });
+      const results = await fetchJsonWithTimeout(`https://lrclib.net/api/search?${params.toString()}`, signal);
+      if (!Array.isArray(results) || results.length === 0) return null;
+
+      const targetSec = info.durationMs > 0 ? info.durationMs / 1000 : 0;
+      const durationDiff = (entry) =>
+        targetSec > 0 && Number.isFinite(Number(entry?.duration))
+          ? Math.abs(Number(entry.duration) - targetSec)
+          : 0;
+
+      const syncedCandidates = results
+        .filter((r) => r && !r.instrumental && typeof r.syncedLyrics === "string" && r.syncedLyrics.trim())
+        .sort((a, b) => durationDiff(a) - durationDiff(b));
+
+      for (const candidate of syncedCandidates) {
+        if (targetSec > 0 && durationDiff(candidate) > 20) break;
+        const lines = parseLrc(candidate.syncedLyrics);
+        if (lines.length > 0) {
+          return { status: "ok", synced: true, lines, source: "LRCLIB Synced" };
+        }
+      }
+
+      // If no close duration match, accept the closest synced match if only 1-2 reasonable results exist
+      if (syncedCandidates.length > 0) {
+        const lines = parseLrc(syncedCandidates[0].syncedLyrics);
+        if (lines.length > 0 && (targetSec === 0 || durationDiff(syncedCandidates[0]) <= 45)) {
+          return { status: "ok", synced: true, lines, source: "LRCLIB Synced" };
+        }
+      }
+
+      const plainCandidates = results
+        .filter((r) => r && !r.instrumental && typeof r.plainLyrics === "string" && r.plainLyrics.trim())
+        .sort((a, b) => durationDiff(a) - durationDiff(b));
+
+      for (const candidate of plainCandidates) {
+        if (targetSec > 0 && durationDiff(candidate) > 25) break;
+        const lines = parsePlainLyrics(candidate.plainLyrics);
+        if (lines.length > 0) {
+          return { status: "ok", synced: false, lines, source: "LRCLIB Plain" };
+        }
+      }
+      return null;
+    } catch (err) {
+      if (err?.name === "AbortError") throw err;
+      return null;
+    }
+  }
+
+  async function fetchTrackLyrics(info, signal, bypassCache = false) {
+    const cacheKey = getTrackCacheKey(info);
+    if (!bypassCache && trackLyricsCache.has(cacheKey)) {
+      return trackLyricsCache.get(cacheKey);
+    }
+
+    // Provider 1: Spotify native color-lyrics
+    const p1 = await fetchSpotifyNativeLyrics(info.trackId);
+    if (signal?.aborted) return null;
+    if (p1 && p1.synced) {
+      cacheLyrics(cacheKey, p1);
+      return p1;
+    }
+    let plainFallback = p1;
+
+    // Provider 2: LRCLIB exact
+    const p2 = await fetchLrclibExact(info, signal);
+    if (signal?.aborted) return null;
+    if (p2 && p2.synced) {
+      cacheLyrics(cacheKey, p2);
+      return p2;
+    }
+    if (!plainFallback && p2) plainFallback = p2;
+
+    // Provider 3: LRCLIB search (best duration match)
+    const p3 = await fetchLrclibSearch(info, signal);
+    if (signal?.aborted) return null;
+    if (p3 && p3.synced) {
+      cacheLyrics(cacheKey, p3);
+      return p3;
+    }
+    if (!plainFallback && p3) plainFallback = p3;
+
+    const finalResult = plainFallback || { status: "empty", synced: false, lines: [], source: "" };
+    cacheLyrics(cacheKey, finalResult);
+    return finalResult;
+  }
+
+  // --- Standalone Liquid Glass Lyrics Stage ---
+  let stageOpen = false;
+  let stageRoot = null;
+  let stageBg = null;
+  let stageSourceBadge = null;
+  let stageModeBtn = null;
+  let stageToneBtn = null;
+  let stageBackdropBtn = null;
+  let stageFsBtn = null;
+  let stageArtImg = null;
+  let stageArtFallback = null;
+  let stageTitleEl = null;
+  let stageTitlePyEl = null;
+  let stageArtistEl = null;
+  let stageArtistPyEl = null;
+  let stageScrubHit = null;
+  let stageScrubFill = null;
+  let stageElapsedEl = null;
+  let stageDurationEl = null;
+  let stagePlayBtn = null;
+  let stageScrollEl = null;
+  let stageLyricsHost = null;
+  let stageResyncBtn = null;
+
+  let stageCurrentTrack = null;
+  let stageTrackKey = "";
+  let stageLyricsData = null;
+  let stageLineEntries = [];
+  let stageActiveIndex = -1;
+  let stageSyncTimer = null;
+  let stageFetchToken = 0;
+  let stageAbortController = null;
+  let userScrollPauseUntil = 0;
+  let isScrubbing = false;
+  let scrubTargetMs = 0;
+  let lastPlayingState = null;
+  let stageEnteredFullscreen = false;
+
+  function ensureStageDOM() {
+    if (stageRoot || !document.body) return;
+
+    stageRoot = document.createElement("div");
+    stageRoot.id = "spinyin-stage";
+    stageRoot.className = "spinyin-stage";
+    stageRoot.setAttribute("role", "dialog");
+    stageRoot.setAttribute("aria-label", "Spinyin Liquid Glass Lyrics Stage");
+    stageRoot.setAttribute("aria-modal", "false");
+
+    stageBg = document.createElement("div");
+    stageBg.className = "spinyin-stage-bg";
+
+    const scrim = document.createElement("div");
+    scrim.className = "spinyin-stage-scrim";
+
+    // Top bar
+    const topbar = document.createElement("div");
+    topbar.className = "spinyin-stage-topbar";
+
+    const brand = document.createElement("div");
+    brand.className = "spinyin-stage-brand";
+    const wordmark = document.createElement("span");
+    wordmark.className = "spinyin-stage-wordmark";
+    wordmark.textContent = "Spinyin";
+    stageSourceBadge = document.createElement("span");
+    stageSourceBadge.className = "spinyin-stage-source";
+    brand.append(ICONS.brandMark(), wordmark, stageSourceBadge);
+
+    const controls = document.createElement("div");
+    controls.className = "spinyin-stage-controls";
+
+    stageModeBtn = document.createElement("button");
+    stageModeBtn.type = "button";
+    stageModeBtn.className = "spinyin-glass-btn";
+    stageModeBtn.title = "Toggle Hanzi + Pinyin or Pinyin Only";
+    stageModeBtn.addEventListener("click", () => {
+      setDisplayMode(state.displayMode === "pinyin-only" ? "dual" : "pinyin-only");
+    });
+
+    stageToneBtn = document.createElement("button");
+    stageToneBtn.type = "button";
+    stageToneBtn.className = "spinyin-glass-btn";
+    stageToneBtn.title = "Cycle Pinyin tone style";
+    stageToneBtn.addEventListener("click", () => {
+      const idx = TONE_OPTIONS.findIndex((t) => t.id === state.toneType);
+      const next = TONE_OPTIONS[(idx + 1) % TONE_OPTIONS.length];
+      setToneType(next.id);
+    });
+
+    stageBackdropBtn = document.createElement("button");
+    stageBackdropBtn.type = "button";
+    stageBackdropBtn.className = "spinyin-glass-btn";
+    stageBackdropBtn.title = "Toggle Adaptive Ambient or Low RAM backdrop";
+    stageBackdropBtn.addEventListener("click", () => {
+      setBackdropMode(state.backdropMode === "ambient" ? "low-ram" : "ambient");
+    });
+
+    const studioBtn = document.createElement("button");
+    studioBtn.type = "button";
+    studioBtn.className = "spinyin-glass-btn";
+    studioBtn.textContent = "Studio";
+    studioBtn.title = "Open Spinyin Studio & Manual Translator";
+    studioBtn.addEventListener("click", () => openTranslatorModal());
+
+    stageFsBtn = document.createElement("button");
+    stageFsBtn.type = "button";
+    stageFsBtn.className = "spinyin-glass-btn spinyin-glass-icon-btn";
+    stageFsBtn.title = "Toggle Fullscreen";
+    stageFsBtn.setAttribute("aria-label", "Toggle Fullscreen");
+    stageFsBtn.addEventListener("click", () => {
+      try {
+        if (document.fullscreenElement) {
+          stageEnteredFullscreen = false;
+          document.exitFullscreen?.().catch?.(() => {});
+        } else {
+          stageEnteredFullscreen = true;
+          document.documentElement.requestFullscreen?.().catch?.(() => {
+            stageEnteredFullscreen = false;
+          });
+        }
+      } catch {}
+    });
+
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.className = "spinyin-glass-btn spinyin-glass-icon-btn";
+    closeBtn.title = "Close Stage (Esc)";
+    closeBtn.setAttribute("aria-label", "Close Stage");
+    closeBtn.appendChild(ICONS.close());
+    closeBtn.addEventListener("click", () => closeStage());
+
+    controls.append(stageModeBtn, stageToneBtn, stageBackdropBtn, studioBtn, stageFsBtn, closeBtn);
+    topbar.append(brand, controls);
+
+    // Body: Left track glass card + Right/Center lyrics scroller
+    const body = document.createElement("div");
+    body.className = "spinyin-stage-body";
+
+    const trackCard = document.createElement("aside");
+    trackCard.className = "spinyin-track-card";
+
+    const artWrap = document.createElement("div");
+    artWrap.className = "spinyin-art-wrap";
+    stageArtFallback = ICONS.musicNote();
+    stageArtImg = document.createElement("img");
+    stageArtImg.className = "spinyin-art-img";
+    stageArtImg.alt = "Album cover";
+    stageArtImg.hidden = true;
+    stageArtImg.addEventListener("error", () => {
+      stageArtImg.hidden = true;
+      stageArtFallback.style.display = "";
+    });
+    artWrap.append(stageArtFallback, stageArtImg);
+
+    const trackMeta = document.createElement("div");
+    trackMeta.className = "spinyin-track-meta";
+    stageTitleEl = document.createElement("div");
+    stageTitleEl.className = "spinyin-stage-title";
+    stageTitlePyEl = document.createElement("div");
+    stageTitlePyEl.className = "spinyin-stage-title-py";
+    stageArtistEl = document.createElement("div");
+    stageArtistEl.className = "spinyin-stage-artist";
+    stageArtistPyEl = document.createElement("div");
+    stageArtistPyEl.className = "spinyin-stage-artist-py";
+    trackMeta.append(stageTitleEl, stageTitlePyEl, stageArtistEl, stageArtistPyEl);
+
+    // Interactive progress scrubber
+    const scrubWrap = document.createElement("div");
+    scrubWrap.className = "spinyin-scrubber-wrap";
+    stageScrubHit = document.createElement("div");
+    stageScrubHit.className = "spinyin-scrubber-hit";
+    stageScrubHit.setAttribute("role", "slider");
+    stageScrubHit.setAttribute("tabindex", "0");
+    stageScrubHit.setAttribute("aria-label", "Track progress");
+    stageScrubHit.setAttribute("aria-valuemin", "0");
+    stageScrubHit.setAttribute("aria-valuemax", "100");
+    stageScrubHit.setAttribute("aria-valuenow", "0");
+
+    const scrubTrack = document.createElement("div");
+    scrubTrack.className = "spinyin-scrubber-track";
+    stageScrubFill = document.createElement("div");
+    stageScrubFill.className = "spinyin-scrubber-fill";
+    const scrubThumb = document.createElement("div");
+    scrubThumb.className = "spinyin-scrubber-thumb";
+    stageScrubFill.appendChild(scrubThumb);
+    scrubTrack.appendChild(stageScrubFill);
+    stageScrubHit.appendChild(scrubTrack);
+
+    const timeRow = document.createElement("div");
+    timeRow.className = "spinyin-time-row";
+    stageElapsedEl = document.createElement("span");
+    stageElapsedEl.textContent = "0:00";
+    stageDurationEl = document.createElement("span");
+    stageDurationEl.textContent = "0:00";
+    timeRow.append(stageElapsedEl, stageDurationEl);
+    scrubWrap.append(stageScrubHit, timeRow);
+
+    const calcScrubFromClientX = (clientX) => {
+      const rect = stageScrubHit.getBoundingClientRect();
+      if (!rect.width) return 0;
+      const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+      const dur = getStageDurationMs();
+      scrubTargetMs = Math.round(ratio * dur);
+      stageScrubFill.style.width = `${(ratio * 100).toFixed(2)}%`;
+      stageElapsedEl.textContent = formatTime(scrubTargetMs);
+      stageScrubHit.setAttribute("aria-valuenow", String(Math.round(ratio * 100)));
+      return scrubTargetMs;
+    };
+
+    stageScrubHit.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0 && e.pointerType === "mouse") return;
+      isScrubbing = true;
+      stageScrubHit.classList.add("is-dragging");
+      stageScrubHit.setPointerCapture?.(e.pointerId);
+      calcScrubFromClientX(e.clientX);
+    });
+
+    stageScrubHit.addEventListener("pointermove", (e) => {
+      if (!isScrubbing) return;
+      calcScrubFromClientX(e.clientX);
+    });
+
+    const finishScrub = (e) => {
+      if (!isScrubbing) return;
+      const target = calcScrubFromClientX(e.clientX);
+      isScrubbing = false;
+      stageScrubHit.classList.remove("is-dragging");
+      try {
+        window.Spicetify?.Player?.seek?.(target);
+      } catch {}
+      userScrollPauseUntil = 0;
+      stageResyncBtn.classList.remove("is-visible");
+    };
+
+    stageScrubHit.addEventListener("pointerup", finishScrub);
+    stageScrubHit.addEventListener("pointercancel", () => {
+      isScrubbing = false;
+      stageScrubHit.classList.remove("is-dragging");
+    });
+
+    stageScrubHit.addEventListener("keydown", (e) => {
+      const dur = getStageDurationMs();
+      if (!dur) return;
+      const cur = Number(window.Spicetify?.Player?.getProgress?.()) || 0;
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        window.Spicetify?.Player?.seek?.(Math.min(dur, cur + 5000));
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        window.Spicetify?.Player?.seek?.(Math.max(0, cur - 5000));
+      }
+    });
+
+    // Playback transport controls
+    const transport = document.createElement("div");
+    transport.className = "spinyin-transport";
+
+    const prevBtn = document.createElement("button");
+    prevBtn.type = "button";
+    prevBtn.className = "spinyin-transport-btn";
+    prevBtn.title = "Previous track";
+    prevBtn.setAttribute("aria-label", "Previous track");
+    prevBtn.appendChild(ICONS.prev());
+    prevBtn.addEventListener("click", () => {
+      try {
+        window.Spicetify?.Player?.back?.();
+      } catch {}
+    });
+
+    stagePlayBtn = document.createElement("button");
+    stagePlayBtn.type = "button";
+    stagePlayBtn.className = "spinyin-transport-btn spinyin-transport-play";
+    stagePlayBtn.title = "Play / Pause";
+    stagePlayBtn.setAttribute("aria-label", "Play or Pause");
+    stagePlayBtn.appendChild(ICONS.play());
+    stagePlayBtn.addEventListener("click", () => {
+      try {
+        window.Spicetify?.Player?.togglePlay?.();
+        setTimeout(updateStagePlaybackTick, 80);
+      } catch {}
+    });
+
+    const nextBtn = document.createElement("button");
+    nextBtn.type = "button";
+    nextBtn.className = "spinyin-transport-btn";
+    nextBtn.title = "Next track";
+    nextBtn.setAttribute("aria-label", "Next track");
+    nextBtn.appendChild(ICONS.next());
+    nextBtn.addEventListener("click", () => {
+      try {
+        window.Spicetify?.Player?.next?.();
+      } catch {}
+    });
+
+    transport.append(prevBtn, stagePlayBtn, nextBtn);
+    trackCard.append(artWrap, trackMeta, scrubWrap, transport);
+
+    // Right/Center Lyrics Scroller
+    const lyricsPane = document.createElement("section");
+    lyricsPane.className = "spinyin-lyrics-pane";
+    lyricsPane.setAttribute("aria-label", "Synced lyrics");
+
+    stageScrollEl = document.createElement("div");
+    stageScrollEl.className = "spinyin-lyrics-scroll";
+    stageLyricsHost = document.createElement("div");
+    stageLyricsHost.className = "spinyin-lyrics-list";
+    stageScrollEl.appendChild(stageLyricsHost);
+
+    const pauseAutoScroll = () => {
+      if (!stageLyricsData?.synced) return;
+      userScrollPauseUntil = Date.now() + 4500;
+      stageResyncBtn.classList.add("is-visible");
+    };
+    stageScrollEl.addEventListener("wheel", pauseAutoScroll, { passive: true });
+    stageScrollEl.addEventListener("touchstart", pauseAutoScroll, { passive: true });
+
+    stageResyncBtn = document.createElement("button");
+    stageResyncBtn.type = "button";
+    stageResyncBtn.className = "spinyin-glass-btn spinyin-resync-btn";
+    stageResyncBtn.textContent = "Sync to Live";
+    stageResyncBtn.addEventListener("click", () => {
+      userScrollPauseUntil = 0;
+      stageResyncBtn.classList.remove("is-visible");
+      if (stageActiveIndex >= 0 && stageLineEntries[stageActiveIndex]) {
+        stageLineEntries[stageActiveIndex].btn.scrollIntoView({
+          behavior: prefersReducedMotion() ? "auto" : "smooth",
+          block: "center",
+        });
+      }
+    });
+
+    lyricsPane.append(stageScrollEl, stageResyncBtn);
+    body.append(trackCard, lyricsPane);
+    stageRoot.append(stageBg, scrim, topbar, body);
+    document.body.appendChild(stageRoot);
+
+    document.addEventListener("fullscreenchange", syncStageFullscreenBtn);
+    syncStageControls();
+  }
+
+  function getStageDurationMs() {
+    return (
+      Number(window.Spicetify?.Player?.getDuration?.()) ||
+      stageCurrentTrack?.durationMs ||
+      0
+    );
+  }
+
+  function syncStageFullscreenBtn() {
+    if (!stageFsBtn) return;
+    const isFs = Boolean(document.fullscreenElement);
+    stageFsBtn.textContent = "";
+    stageFsBtn.appendChild(isFs ? ICONS.exitFullscreen() : ICONS.fullscreen());
+    stageFsBtn.classList.toggle("is-active", isFs);
+    stageFsBtn.title = isFs ? "Exit Fullscreen" : "Enter Fullscreen";
+  }
+
+  function syncStageControls() {
+    if (!stageRoot) return;
+    stageRoot.dataset.mode = state.displayMode;
+    stageRoot.dataset.backdrop = state.backdropMode;
+
+    if (stageModeBtn) {
+      const isPyOnly = state.displayMode === "pinyin-only";
+      stageModeBtn.textContent = isPyOnly ? "Pinyin Only" : "Hanzi + Pinyin";
+      stageModeBtn.classList.toggle("is-active", isPyOnly);
+    }
+    if (stageToneBtn) {
+      const toneOpt = TONE_OPTIONS.find((t) => t.id === state.toneType) || TONE_OPTIONS[0];
+      stageToneBtn.textContent = toneOpt.short;
+    }
+    if (stageBackdropBtn) {
+      const isLowRam = state.backdropMode === "low-ram";
+      stageBackdropBtn.textContent = isLowRam ? "Low RAM" : "Ambient";
+      stageBackdropBtn.classList.toggle("is-active", isLowRam);
+    }
+    syncStageFullscreenBtn();
+  }
+
+  function updateStageBackdrop() {
+    if (!stageBg) return;
+    if (state.backdropMode === "low-ram") {
+      stageBg.style.backgroundImage = "none";
+      return;
+    }
+    const cover = stageCurrentTrack?.coverUrl || "";
+    stageBg.style.backgroundImage = cover ? `url("${cover.replace(/"/g, "%22")}")` : "none";
+  }
+
+  function updateStageTrackHeader() {
+    if (!stageRoot) return;
+    const info = stageCurrentTrack || getCurrentTrackInfo();
+
+    stageTitleEl.textContent = info.title || "No Track Playing";
+    stageTitlePyEl.textContent = hasHanzi(info.title) ? convertToPinyin(info.title, state.toneType) : "";
+    stageArtistEl.textContent = info.artist || "";
+    stageArtistPyEl.textContent = hasHanzi(info.artist) ? convertToPinyin(info.artist, state.toneType) : "";
+
+    if (info.coverUrl) {
+      if (stageArtImg.src !== info.coverUrl) {
+        stageArtImg.src = info.coverUrl;
+      }
+      stageArtImg.hidden = false;
+      stageArtFallback.style.display = "none";
+    } else {
+      stageArtImg.hidden = true;
+      stageArtFallback.style.display = "";
+    }
+
+    stageDurationEl.textContent = formatTime(info.durationMs);
+    updateStageBackdrop();
+  }
+
+  function refreshStagePinyin() {
+    if (!stageRoot) return;
+    updateStageTrackHeader();
+    for (const entry of stageLineEntries) {
+      if (hasHanzi(entry.text)) {
+        const py = convertToPinyin(entry.text, state.toneType);
+        entry.pyEl.textContent = py;
+        entry.btn.dataset.hasPinyin = py ? "1" : "0";
+      } else {
+        entry.pyEl.textContent = "";
+        entry.btn.dataset.hasPinyin = "0";
+      }
+    }
+  }
+
+  function renderStageLoading() {
+    if (!stageLyricsHost) return;
+    stageLineEntries = [];
+    stageActiveIndex = -1;
+    stageLyricsData = null;
+    stageSourceBadge.textContent = "Loading…";
+    stageResyncBtn.classList.remove("is-visible");
+    stageLyricsHost.textContent = "";
+
+    const skel = document.createElement("div");
+    skel.className = "spinyin-skeleton-list";
+    const widths = ["62%", "84%", "74%", "54%", "78%", "66%"];
+    widths.forEach((w) => {
+      const bar = document.createElement("div");
+      bar.className = "spinyin-skeleton-bar";
+      bar.style.width = w;
+      skel.appendChild(bar);
+    });
+    stageLyricsHost.appendChild(skel);
+    stageScrollEl.scrollTop = 0;
+  }
+
+  function renderStageEmpty(title, desc, showTranslatorBtn = true, showRetryBtn = true) {
+    if (!stageLyricsHost) return;
+    stageLineEntries = [];
+    stageActiveIndex = -1;
+    stageLyricsData = null;
+    stageSourceBadge.textContent = "";
+    stageResyncBtn.classList.remove("is-visible");
+    stageLyricsHost.textContent = "";
+
+    const box = document.createElement("div");
+    box.className = "spinyin-empty-state";
+
+    const h = document.createElement("div");
+    h.className = "spinyin-empty-title";
+    h.textContent = title;
+
+    const p = document.createElement("div");
+    p.className = "spinyin-empty-desc";
+    p.textContent = desc;
+
+    box.append(h, p);
+
+    if (showTranslatorBtn || showRetryBtn) {
+      const actions = document.createElement("div");
+      actions.className = "spinyin-empty-actions";
+
+      if (showTranslatorBtn) {
+        const openTransBtn = document.createElement("button");
+        openTransBtn.type = "button";
+        openTransBtn.className = "spinyin-btn spinyin-btn-primary";
+        openTransBtn.textContent = "Open Manual Translator";
+        openTransBtn.addEventListener("click", () => openTranslatorModal());
+        actions.appendChild(openTransBtn);
+      }
+
+      if (showRetryBtn) {
+        const retryBtn = document.createElement("button");
+        retryBtn.type = "button";
+        retryBtn.className = "spinyin-btn spinyin-btn-secondary";
+        retryBtn.textContent = "Retry Fetch";
+        retryBtn.addEventListener("click", () => loadStageTrack(true));
+        actions.appendChild(retryBtn);
+      }
+
+      box.appendChild(actions);
+    }
+
+    stageLyricsHost.appendChild(box);
+    stageScrollEl.scrollTop = 0;
+  }
+
+  function renderStageLyrics(data) {
+    if (!stageLyricsHost) return;
+    stageLyricsHost.textContent = "";
+    stageLineEntries = [];
+    stageActiveIndex = -1;
+    stageLyricsData = data;
+    stageSourceBadge.textContent = data.source || "";
+    stageResyncBtn.classList.remove("is-visible");
+    userScrollPauseUntil = 0;
+
+    const frag = document.createDocumentFragment();
+    data.lines.forEach((line) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "spinyin-sline";
+      if (data.synced && Number.isFinite(line.timeMs)) {
+        btn.classList.add("is-clickable", "is-future");
+        btn.addEventListener("click", () => {
+          userScrollPauseUntil = 0;
+          stageResyncBtn.classList.remove("is-visible");
+          try {
+            window.Spicetify?.Player?.seek?.(line.timeMs);
+          } catch {}
+          setTimeout(updateStagePlaybackTick, 40);
+        });
+      } else {
+        btn.classList.add("is-plain");
+        btn.disabled = true;
+      }
+
+      const origEl = document.createElement("span");
+      origEl.className = "spinyin-sline-orig";
+      origEl.textContent = line.text;
+
+      const pyEl = document.createElement("span");
+      pyEl.className = "spinyin-sline-py";
+      if (hasHanzi(line.text)) {
+        const py = convertToPinyin(line.text, state.toneType);
+        pyEl.textContent = py;
+        btn.dataset.hasPinyin = py ? "1" : "0";
+      } else {
+        btn.dataset.hasPinyin = "0";
+      }
+
+      btn.append(origEl, pyEl);
+      frag.appendChild(btn);
+      stageLineEntries.push({
+        timeMs: line.timeMs,
+        text: line.text,
+        btn,
+        pyEl,
+      });
+    });
+
+    stageLyricsHost.appendChild(frag);
+    stageScrollEl.scrollTop = 0;
+    updateStagePlaybackTick();
+  }
+
+  async function loadStageTrack(forceRefresh = false) {
+    if (!stageOpen) return;
+    const info = getCurrentTrackInfo();
+    const key = getTrackCacheKey(info);
+
+    if (!forceRefresh && key === stageTrackKey && stageCurrentTrack) {
+      updateStageTrackHeader();
+      return;
+    }
+
+    stageCurrentTrack = info;
+    stageTrackKey = key;
+    updateStageTrackHeader();
+
+    if (stageAbortController) {
+      stageAbortController.abort();
+      stageAbortController = null;
+    }
+
+    if (!info.title) {
+      renderStageEmpty(
+        "Nothing is playing",
+        "Start playing any song on Spotify to view live synced lyrics with instant offline Pinyin.",
+        true,
+        false,
+      );
+      return;
+    }
+
+    if (forceRefresh) {
+      trackLyricsCache.delete(key);
+    }
+
+    const token = ++stageFetchToken;
+    stageAbortController = new AbortController();
+    const signal = stageAbortController.signal;
+
+    // Instant render from cache without skeleton flash
+    if (!forceRefresh && trackLyricsCache.has(key)) {
+      const cached = trackLyricsCache.get(key);
+      if (cached.status === "ok" && cached.lines.length > 0) {
+        renderStageLyrics(cached);
+      } else {
+        renderStageEmpty(
+          "No lyrics found",
+          "We checked Spotify and LRCLIB for this track. Paste lyrics into the offline translator to read with instant Pinyin.",
+          true,
+          true,
+        );
+      }
+      return;
+    }
+
+    renderStageLoading();
+
+    try {
+      const result = await fetchTrackLyrics(info, signal, forceRefresh);
+      if (!stageOpen || token !== stageFetchToken || signal.aborted || !result) return;
+      if (result.status === "ok" && result.lines.length > 0) {
+        renderStageLyrics(result);
+      } else {
+        renderStageEmpty(
+          "No lyrics found",
+          "We checked Spotify and LRCLIB for this track. Paste lyrics into the offline translator to read with instant Pinyin.",
+          true,
+          true,
+        );
+      }
+    } catch (err) {
+      if (err?.name === "AbortError" || !stageOpen || token !== stageFetchToken) return;
+      renderStageEmpty(
+        "Couldn't load lyrics",
+        "Network request failed. You can retry or paste lyrics into the offline Manual Translator.",
+        true,
+        true,
+      );
+    }
+  }
+
+  function findActiveLineIndex(entries, posMs) {
+    let lo = 0;
+    let hi = entries.length - 1;
+    let ans = -1;
+    const target = posMs + 120;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      if (entries[mid].timeMs <= target) {
+        ans = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    return ans;
+  }
+
+  function updateStagePlaybackTick() {
+    if (!stageOpen || !stageRoot) return;
+
+    // Detect track changes even if songchange event was missed
+    const info = getCurrentTrackInfo();
+    const key = getTrackCacheKey(info);
+    if (key !== stageTrackKey) {
+      loadStageTrack();
+      return;
+    }
+
+    // Play / pause button state
+    const playing = Boolean(window.Spicetify?.Player?.isPlaying?.());
+    if (playing !== lastPlayingState) {
+      lastPlayingState = playing;
+      stagePlayBtn.textContent = "";
+      stagePlayBtn.appendChild(playing ? ICONS.pause() : ICONS.play());
+      stagePlayBtn.setAttribute("aria-label", playing ? "Pause" : "Play");
+    }
+
+    // Progress scrubber
+    const posMs = Number(window.Spicetify?.Player?.getProgress?.()) || 0;
+    const durMs = getStageDurationMs();
+    if (!isScrubbing) {
+      const pct = durMs > 0 ? Math.min(100, Math.max(0, (posMs / durMs) * 100)) : 0;
+      stageScrubFill.style.width = `${pct.toFixed(2)}%`;
+      stageElapsedEl.textContent = formatTime(posMs);
+      stageDurationEl.textContent = formatTime(durMs);
+      stageScrubHit.setAttribute("aria-valuenow", String(Math.round(pct)));
+    }
+
+    // Active synced lyric line highlight & centered smooth scroll
+    if (stageLyricsData?.synced && stageLineEntries.length > 0) {
+      const nextIdx = findActiveLineIndex(stageLineEntries, posMs);
+      if (nextIdx !== stageActiveIndex) {
+        stageActiveIndex = nextIdx;
+        for (let i = 0; i < stageLineEntries.length; i++) {
+          const btn = stageLineEntries[i].btn;
+          btn.classList.toggle("is-past", i < nextIdx);
+          btn.classList.toggle("is-active", i === nextIdx);
+          btn.classList.toggle("is-future", i > nextIdx);
+        }
+
+        if (nextIdx >= 0 && Date.now() >= userScrollPauseUntil) {
+          stageResyncBtn.classList.remove("is-visible");
+          stageLineEntries[nextIdx].btn.scrollIntoView({
+            behavior: prefersReducedMotion() ? "auto" : "smooth",
+            block: "center",
+          });
+        }
+      } else if (userScrollPauseUntil > 0 && Date.now() >= userScrollPauseUntil) {
+        userScrollPauseUntil = 0;
+        stageResyncBtn.classList.remove("is-visible");
+      }
+    }
+  }
+
+  function startStageSyncLoop() {
+    if (!stageOpen || document.hidden || stageSyncTimer) return;
+    updateStagePlaybackTick();
+    stageSyncTimer = setInterval(updateStagePlaybackTick, 120);
+  }
+
+  function stopStageSyncLoop() {
+    if (stageSyncTimer) {
+      clearInterval(stageSyncTimer);
+      stageSyncTimer = null;
+    }
+  }
+
+  function openStage() {
+    ensureStageDOM();
+    if (!stageRoot) return;
+    stageOpen = true;
+    lastPlayingState = null;
+    stageRoot.classList.add("is-open");
+    if (pillRoot) pillRoot.classList.remove("is-visible");
+    syncMenuAndButtonState();
+    loadStageTrack();
+    startStageSyncLoop();
+  }
+
+  function closeStage() {
+    if (!stageOpen) return;
+    stageOpen = false;
+    stopStageSyncLoop();
+    if (stageAbortController) {
+      stageAbortController.abort();
+      stageAbortController = null;
+    }
+    if (stageRoot) {
+      stageRoot.classList.remove("is-open");
+    }
+    if (stageEnteredFullscreen && document.fullscreenElement) {
+      stageEnteredFullscreen = false;
+      try {
+        document.exitFullscreen?.().catch?.(() => {});
+      } catch {}
+    }
+    syncMenuAndButtonState();
+    scheduleScan(50);
+  }
+
+  function toggleStage() {
+    if (stageOpen) closeStage();
+    else openStage();
+  }
+
+  // --- Studio Modal & Manual Translator ---
   async function copyText(text, label) {
     if (!text) return;
     try {
@@ -1054,13 +2946,25 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
 
     const nowActions = document.createElement("div");
     nowActions.className = "spinyin-actions";
+    const openStageBtn = document.createElement("button");
+    openStageBtn.type = "button";
+    openStageBtn.className = "spinyin-btn spinyin-btn-primary";
+    openStageBtn.textContent = stageOpen ? "Return to Lyrics Stage" : "Open Lyrics Stage";
+    openStageBtn.addEventListener("click", () => {
+      try {
+        window.Spicetify?.PopupModal?.hide?.();
+      } catch {}
+      if (!stageOpen) openStage();
+    });
     const useNowBtn = document.createElement("button");
+    useNowBtn.type = "button";
     useNowBtn.className = "spinyin-btn spinyin-btn-secondary";
     useNowBtn.textContent = "Load into Translator";
     const copyNowBtn = document.createElement("button");
+    copyNowBtn.type = "button";
     copyNowBtn.className = "spinyin-btn spinyin-btn-secondary";
     copyNowBtn.textContent = "Copy Track Pinyin";
-    nowActions.append(useNowBtn, copyNowBtn);
+    nowActions.append(openStageBtn, useNowBtn, copyNowBtn);
     nowCard.append(nowHeader, nowTitle, nowPinyin, nowArtist, nowActions);
 
     const settingsCard = document.createElement("div");
@@ -1170,12 +3074,15 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     const transActions = document.createElement("div");
     transActions.className = "spinyin-actions";
     const copyPinyinBtn = document.createElement("button");
+    copyPinyinBtn.type = "button";
     copyPinyinBtn.className = "spinyin-btn spinyin-btn-primary";
     copyPinyinBtn.textContent = "Copy Pinyin";
     const copyBothBtn = document.createElement("button");
+    copyBothBtn.type = "button";
     copyBothBtn.className = "spinyin-btn spinyin-btn-secondary";
     copyBothBtn.textContent = "Copy Hanzi + Pinyin";
     const clearBtn = document.createElement("button");
+    clearBtn.type = "button";
     clearBtn.className = "spinyin-btn spinyin-btn-secondary";
     clearBtn.textContent = "Clear";
     transActions.append(copyPinyinBtn, copyBothBtn, clearBtn);
@@ -1286,12 +3193,24 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     }
     controlsRegistered = true;
 
-    const iconSvg = `<svg role="img" height="16" width="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1.5 2.75A1.25 1.25 0 0 1 2.75 1.5h10.5A1.25 1.25 0 0 1 14.5 2.75v10.5a1.25 1.25 0 0 1-1.25 1.25H2.75A1.25 1.25 0 0 1 1.5 13.25V2.75zm1.5.25v10h10V3H3zm1.6 1.9h2.25v.95H5.5v1.3h1.2v.95H5.5v2.95h-.95V8.1H3.6v-.95h.95v-1.3h-.85V4.9h.9zm4.35-.45h.95v1.25h1.5v-.95h.95v.95h.95v.95h-.95v1.55h1.05v.95h-1.05v2.05h-.95V9.15H9.9v2.05h-.95V9.15h-.8V8.2h.8V6.65h-.7V5.7h.7V4.45zm.95 2.2V8.2h1.5V6.65H9.9z"/></svg>`;
+    const stageIconSvg = `<svg role="img" height="16" width="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M2.25 2A1.75 1.75 0 0 0 .5 3.75v8.5C.5 13.216 1.284 14 2.25 14h11.5A1.75 1.75 0 0 0 15.5 12.25v-8.5A1.75 1.75 0 0 0 13.75 2H2.25zm0 1.4h11.5c.193 0 .35.157.35.35v8.5a.35.35 0 0 1-.35.35H2.25a.35.35 0 0 1-.35-.35v-8.5c0-.193.157-.35.35-.35zM3.6 5.6a.65.65 0 0 0 0 1.3h8.8a.65.65 0 0 0 0-1.3H3.6zm0 2.65a.65.65 0 0 0 0 1.3h5.4a.65.65 0 0 0 0-1.3H3.6zm7.72-.16a.65.65 0 0 0-.96.88c.46.5 1.24.5 1.7 0a.65.65 0 1 0-.96-.88.24.24 0 0 1-.28 0h.5zM3.6 10.9a.65.65 0 0 0 0 1.3h6.8a.65.65 0 0 0 0-1.3H3.6z"/></svg>`;
+    const studioIconSvg = `<svg role="img" height="16" width="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1.5 2.75A1.25 1.25 0 0 1 2.75 1.5h10.5A1.25 1.25 0 0 1 14.5 2.75v10.5a1.25 1.25 0 0 1-1.25 1.25H2.75A1.25 1.25 0 0 1 1.5 13.25V2.75zm1.5.25v10h10V3H3zm1.6 1.9h2.25v.95H5.5v1.3h1.2v.95H5.5v2.95h-.95V8.1H3.6v-.95h.95v-1.3h-.85V4.9h.9zm4.35-.45h.95v1.25h1.5v-.95h.95v.95h.95v.95h-.95v1.55h1.05v.95h-1.05v2.05h-.95V9.15H9.9v2.05h-.95V9.15h-.8V8.2h.8V6.65h-.7V5.7h.7V4.45zm.95 2.2V8.2h1.5V6.65H9.9z"/></svg>`;
 
     try {
-      playbarButton = new window.Spicetify.Playbar.Button(
-        "Spinyin-lyric",
-        iconSvg,
+      playbarStageButton = new window.Spicetify.Playbar.Button(
+        "Spinyin Lyrics",
+        stageIconSvg,
+        () => toggleStage(),
+        false,
+        stageOpen,
+        true,
+      );
+    } catch {}
+
+    try {
+      playbarStudioButton = new window.Spicetify.Playbar.Button(
+        "Spinyin Studio",
+        studioIconSvg,
         () => openTranslatorModal(),
         false,
         state.enabled,
@@ -1300,6 +3219,9 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     } catch {}
 
     try {
+      menuOpenStage = new window.Spicetify.Menu.Item("Open Spinyin Lyrics Stage", stageOpen, () => {
+        toggleStage();
+      });
       menuToggleEnabled = new window.Spicetify.Menu.Item("Enable Spinyin-lyric", state.enabled, () => {
         setEnabled(!state.enabled);
       });
@@ -1337,6 +3259,7 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
       });
 
       new window.Spicetify.Menu.SubMenu("Spinyin-lyric", [
+        menuOpenStage,
         menuToggleEnabled,
         menuToggleLyrics,
         menuToggleTitles,
@@ -1347,7 +3270,13 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     } catch {}
 
     try {
-      window.Spicetify.Player?.addEventListener?.("songchange", () => scheduleScan(200));
+      window.Spicetify.Player?.addEventListener?.("songchange", () => {
+        scheduleScan(200);
+        if (stageOpen) loadStageTrack();
+      });
+      window.Spicetify.Player?.addEventListener?.("onplaypause", () => {
+        if (stageOpen) updateStagePlaybackTick();
+      });
       window.Spicetify.Platform?.History?.listen?.(() => scheduleScan(200));
     } catch {}
   }
@@ -1367,7 +3296,11 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     const observer = new MutationObserver((mutations) => {
       for (const m of mutations) {
         const t = m.target;
-        if (t && t.closest && (t.closest(".spinyin-pill") || t.closest(".spinyin-modal"))) {
+        if (
+          t &&
+          t.closest &&
+          (t.closest(".spinyin-pill") || t.closest(".spinyin-modal") || t.closest(".spinyin-stage"))
+        ) {
           continue;
         }
         scheduleScan(100);
@@ -1383,10 +3316,26 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     setInterval(() => {
       if (document.hidden) return;
       fixLiquifyNextSongCard();
-      if (state.enabled && state.translateLyrics && document.querySelector(LYRIC_SELECTORS)) {
+      if (!stageOpen && state.enabled && state.translateLyrics && document.querySelector(LYRIC_SELECTORS)) {
         scanDOM();
       }
     }, 1200);
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        stopStageSyncLoop();
+      } else if (stageOpen) {
+        startStageSyncLoop();
+      }
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape" || !stageOpen) return;
+      // Let Spicetify modals (e.g. Spinyin Studio opened above the stage) handle Escape first
+      if (document.querySelector(".GenericModal__overlay, .GenericModal, .spinyin-modal")) return;
+      e.preventDefault();
+      closeStage();
+    });
 
     try {
       window.addEventListener("resize", fixLiquifyNextSongCard);

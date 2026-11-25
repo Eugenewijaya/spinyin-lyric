@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Spinyin-lyric logo">
+  <defs>
+    <linearGradient id="spinyinBadge" x1="18%" y1="10%" x2="84%" y2="92%">
+      <stop offset="0%" stop-color="#27E86D"/>
+      <stop offset="52%" stop-color="#1ED760"/>
+      <stop offset="100%" stop-color="#16BD52"/>
+    </linearGradient>
+    <linearGradient id="badgeRim" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.34"/>
+      <stop offset="45%" stop-color="#ffffff" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.14"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Primary circular emblem -->
+  <circle cx="64" cy="64" r="60" fill="url(#spinyinBadge)"/>
+  <circle cx="64" cy="64" r="59.2" fill="none" stroke="url(#badgeRim)" stroke-width="1.6"/>
+
+  <!-- Pinyin 3rd-tone caron (ˇ) + paired acoustic lyric waves -->
+  <g fill="none" stroke="#111315" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Tone caron (ˇ) anchoring Mandarin Pinyin identity -->
+    <path d="M 44 30 L 60.8 42.2 Q 64 44.5 67.2 42.2 L 84 30" stroke-width="10"/>
+    <!-- Primary rising soundwave arc -->
+    <path d="M 26 73.5 C 49 62, 79 61, 102 71.5" stroke-width="11"/>
+    <!-- Secondary cadence soundwave arc -->
+    <path d="M 37 93.5 C 54.5 85, 74.5 84.5 91.5 92.5" stroke-width="9.5"/>
+  </g>
+</svg>

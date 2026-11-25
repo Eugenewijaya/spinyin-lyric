@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Spinyin-lyric icon">
+  <circle cx="64" cy="64" r="62" fill="#1ED760"/>
+  <g fill="none" stroke="#111315" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 42.5 29.5 L 60.5 42.6 Q 64 45.2 67.5 42.6 L 85.5 29.5" stroke-width="11.5"/>
+    <path d="M 24.5 74 C 48.5 62, 79.5 61, 103.5 72" stroke-width="12.5"/>
+    <path d="M 36 94.5 C 54 85.5, 75 85, 92.5 93.5" stroke-width="10.5"/>
+  </g>
+</svg>

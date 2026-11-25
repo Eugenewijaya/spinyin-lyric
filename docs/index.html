@@ -1,0 +1,2105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spinyin-lyric for Spotify — Mandarin Pinyin &amp; Liquid Glass Lyrics</title>
+  <meta name="description" content="A lightweight standalone Spotify extension with a 100% offline Pinyin engine, dual Hanzi + Pinyin or Pinyin-Only modes, and a calm Liquid Glass lyrics stage." />
+  <meta name="theme-color" content="#09090d" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+
+  <!-- OpenGraph / Social -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Spinyin-lyric for Spotify v2.0.0" />
+  <meta property="og:description" content="Standalone Mandarin Pinyin &amp; Liquid Glass lyrics stage for Spotify. 100% offline Pinyin engine, click-to-seek, and dual or Pinyin-only modes." />
+  <meta property="og:url" content="https://eugenewijaya.github.io/spinyin-lyric/" />
+  <meta property="og:image" content="https://raw.githubusercontent.com/Eugenewijaya/spinyin-lyric/main/preview.svg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Spinyin-lyric for Spotify v2.0.0" />
+  <meta name="twitter:description" content="Standalone Mandarin Pinyin &amp; Liquid Glass lyrics stage for Spotify." />
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/Eugenewijaya/spinyin-lyric/main/preview.svg" />
+
+  <!-- Typography: Plus Jakarta Sans + Noto Sans SC + JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg-base: #09090d;
+      --bg-elevated: #111018;
+      --glass-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.075) 0%, rgba(255, 255, 255, 0.025) 100%);
+      --glass-bg-strong: linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.035) 100%);
+      --glass-border: rgba(255, 255, 255, 0.12);
+      --glass-border-hover: rgba(255, 255, 255, 0.22);
+      --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+      --glass-shadow: 0 24px 64px -20px rgba(0, 0, 0, 0.68);
+
+      --accent: #1ed760;
+      --accent-soft: rgba(30, 215, 96, 0.15);
+      --accent-border: rgba(30, 215, 96, 0.36);
+      --rose-tint: #d88aa4;
+
+      --text-primary: #f6f6f9;
+      --text-secondary: rgba(246, 246, 249, 0.68);
+      --text-muted: rgba(246, 246, 249, 0.44);
+
+      --font-sans: "Plus Jakarta Sans", "PingFang SC", "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+      --radius-lg: 24px;
+      --radius-md: 18px;
+      --radius-pill: 999px;
+      --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      background-color: var(--bg-base);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      min-height: 100vh;
+      overflow-x: hidden;
+      background-color: var(--bg-base);
+      line-height: 1.6;
+      position: relative;
+    }
+
+    /* Atmospheric Liquid Glass Backdrop (Lightweight CSS Radial Orbs) */
+    .ambient-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      overflow: hidden;
+      background:
+        radial-gradient(ellipse 68% 52% at 78% 12%, rgba(216, 138, 164, 0.16) 0%, rgba(124, 66, 93, 0.06) 44%, transparent 72%),
+        radial-gradient(ellipse 56% 48% at 16% 24%, rgba(30, 215, 96, 0.095) 0%, transparent 66%),
+        radial-gradient(ellipse 60% 50% at 50% 92%, rgba(112, 82, 148, 0.11) 0%, transparent 70%),
+        var(--bg-base);
+    }
+
+    .ambient-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(88px);
+      opacity: 0.45;
+      will-change: transform;
+    }
+
+    .ambient-orb--rose {
+      width: 480px;
+      height: 480px;
+      top: -110px;
+      right: -80px;
+      background: radial-gradient(circle, rgba(216, 138, 164, 0.32), transparent 70%);
+      animation: floatSlow 22s ease-in-out infinite alternate;
+    }
+
+    .ambient-orb--emerald {
+      width: 420px;
+      height: 420px;
+      bottom: 8%;
+      left: -120px;
+      background: radial-gradient(circle, rgba(30, 215, 96, 0.22), transparent 70%);
+      animation: floatSlow 26s ease-in-out infinite alternate-reverse;
+    }
+
+    /* Ultra-subtle film grain for physical glass texture */
+    .grain-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      opacity: 0.028;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    @keyframes floatSlow {
+      0% { transform: translate3d(0, 0, 0) scale(1); }
+      100% { transform: translate3d(28px, 36px, 0) scale(1.06); }
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      font-family: inherit;
+      color: inherit;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Glass Primitive */
+    .glass-surface {
+      background: var(--glass-bg);
+      backdrop-filter: blur(22px) saturate(145%);
+      -webkit-backdrop-filter: blur(22px) saturate(145%);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-highlight), var(--glass-shadow);
+    }
+
+    /* Sticky Minimal Glass Navbar */
+    .navbar-wrap {
+      position: sticky;
+      top: 16px;
+      z-index: 50;
+      padding: 0 20px;
+      margin-top: 16px;
+    }
+
+    .navbar {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 10px 14px 10px 16px;
+      border-radius: var(--radius-pill);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: rgba(16, 15, 22, 0.72);
+      backdrop-filter: blur(22px) saturate(155%);
+      -webkit-backdrop-filter: blur(22px) saturate(155%);
+      border: 1px solid rgba(255, 255, 255, 0.11);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 14px 40px -12px rgba(0, 0, 0, 0.55);
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 0.98rem;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+
+    .brand img {
+      width: 28px;
+      height: 28px;
+      display: block;
+      border-radius: 50%;
+    }
+
+    .version-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 9px;
+      border-radius: var(--radius-pill);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--accent);
+      background: var(--accent-soft);
+      border: 1px solid var(--accent-border);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-link {
+      padding: 7px 13px;
+      border-radius: var(--radius-pill);
+      font-size: 0.86rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: color 0.2s var(--ease-out), background-color 0.2s var(--ease-out);
+    }
+
+    .nav-link:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 14px;
+      border-radius: var(--radius-pill);
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.11);
+      transition: background-color 0.2s var(--ease-out), border-color 0.2s var(--ease-out), transform 0.2s var(--ease-out);
+    }
+
+    .nav-pill:hover {
+      background: rgba(255, 255, 255, 0.11);
+      border-color: rgba(255, 255, 255, 0.22);
+      transform: translateY(-1px);
+    }
+
+    .nav-pill--sponsor {
+      color: #f6c2d3;
+      background: rgba(216, 138, 164, 0.11);
+      border-color: rgba(216, 138, 164, 0.28);
+    }
+
+    .nav-pill--sponsor:hover {
+      background: rgba(216, 138, 164, 0.18);
+      border-color: rgba(216, 138, 164, 0.42);
+    }
+
+    .nav-pill svg {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 68px 0 44px;
+      text-align: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.11);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+    }
+
+    .eyebrow-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 10px rgba(30, 215, 96, 0.8);
+    }
+
+    .hero-title {
+      font-size: clamp(2.35rem, 5.2vw, 4.15rem);
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -0.035em;
+      max-width: 820px;
+      margin: 0 auto 20px;
+    }
+
+    .hero-title .accent-word {
+      background: linear-gradient(135deg, #f6f6f9 18%, #a6f2c0 68%, #1ed760 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .hero-subtitle {
+      max-width: 610px;
+      margin: 0 auto 32px;
+      font-size: clamp(1rem, 1.55vw, 1.14rem);
+      color: var(--text-secondary);
+      line-height: 1.68;
+      font-weight: 400;
+    }
+
+    .hero-ctas {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 40px;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 13px 24px;
+      border-radius: var(--radius-pill);
+      background: var(--accent);
+      color: #09110c;
+      font-weight: 700;
+      font-size: 0.94rem;
+      letter-spacing: -0.01em;
+      box-shadow: 0 10px 30px -8px rgba(30, 215, 96, 0.52), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+      transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out), filter 0.2s var(--ease-out);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.06);
+      box-shadow: 0 16px 36px -8px rgba(30, 215, 96, 0.62), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    }
+
+    .btn-glass {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 13px 22px;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.065);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+      color: var(--text-primary);
+      font-weight: 600;
+      font-size: 0.93rem;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      transition: background-color 0.2s var(--ease-out), border-color 0.2s var(--ease-out), transform 0.2s var(--ease-out);
+    }
+
+    .btn-glass:hover {
+      background: rgba(255, 255, 255, 0.11);
+      border-color: rgba(255, 255, 255, 0.24);
+      transform: translateY(-2px);
+    }
+
+    /* Direct Get Started / 1-Click Installer Box */
+    .installer-card {
+      max-width: 780px;
+      margin: 0 auto;
+      border-radius: var(--radius-lg);
+      padding: 18px 20px 20px;
+      text-align: left;
+      transition: border-color 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
+    }
+
+    .installer-card.is-highlighted {
+      border-color: var(--accent-border);
+      box-shadow: var(--glass-highlight), 0 0 0 1px rgba(30, 215, 96, 0.25), 0 24px 64px -18px rgba(30, 215, 96, 0.22);
+    }
+
+    .installer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .installer-tabs {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px;
+      border-radius: var(--radius-pill);
+      background: rgba(0, 0, 0, 0.34);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .installer-tab {
+      padding: 7px 14px;
+      border-radius: var(--radius-pill);
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      transition: background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
+    }
+
+    .installer-tab:hover {
+      color: var(--text-primary);
+    }
+
+    .installer-tab[aria-selected="true"] {
+      background: rgba(255, 255, 255, 0.13);
+      color: #ffffff;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    .installer-note {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .command-panel {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 13px 14px 13px 18px;
+      border-radius: 15px;
+      background: rgba(7, 7, 11, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+    }
+
+    .command-panel[hidden] {
+      display: none;
+    }
+
+    .command-code {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      overflow-x: auto;
+      scrollbar-width: thin;
+      font-family: var(--font-mono);
+      font-size: 0.84rem;
+      color: #e9ecf5;
+      white-space: nowrap;
+      padding-bottom: 2px;
+    }
+
+    .command-prompt {
+      color: var(--accent);
+      user-select: none;
+      font-weight: 600;
+    }
+
+    .copy-btn {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.09);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+      transition: background-color 0.18s var(--ease-out), border-color 0.18s var(--ease-out), color 0.18s var(--ease-out), transform 0.15s var(--ease-out);
+    }
+
+    .copy-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .copy-btn:active {
+      transform: scale(0.97);
+    }
+
+    .copy-btn.is-copied {
+      background: var(--accent-soft);
+      border-color: var(--accent-border);
+      color: var(--accent);
+    }
+
+    .copy-btn svg {
+      width: 15px;
+      height: 15px;
+    }
+
+    .marketplace-steps {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      width: 100%;
+    }
+
+    .marketplace-step {
+      padding: 12px 14px;
+      border-radius: 13px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 0.84rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .marketplace-step strong {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--accent-soft);
+      border: 1px solid var(--accent-border);
+      color: var(--accent);
+      font-size: 0.74rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    /* Section Headings */
+    .section {
+      padding: 68px 0;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .section-kicker {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .section-title {
+      font-size: clamp(1.65rem, 3vw, 2.3rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+    }
+
+    .section-desc {
+      max-width: 460px;
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+    }
+
+    /* Interactive Liquid Glass Lyrics Stage Preview */
+    .stage-shell {
+      position: relative;
+      border-radius: 28px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 36px 90px -24px rgba(0, 0, 0, 0.78);
+      background: #100e16;
+      transition: background-color 0.5s var(--ease-out);
+    }
+
+    .stage-ambient {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      transition: opacity 0.55s var(--ease-out), background 0.7s var(--ease-out);
+      background:
+        radial-gradient(ellipse 72% 65% at 72% 30%, rgba(216, 138, 164, 0.30) 0%, rgba(124, 66, 93, 0.12) 48%, transparent 74%),
+        radial-gradient(ellipse 52% 50% at 14% 86%, rgba(30, 215, 96, 0.14) 0%, transparent 68%);
+    }
+
+    .stage-shell[data-theme="ocean"] .stage-ambient {
+      background:
+        radial-gradient(ellipse 72% 65% at 72% 30%, rgba(112, 168, 224, 0.28) 0%, rgba(44, 82, 136, 0.14) 48%, transparent 74%),
+        radial-gradient(ellipse 52% 50% at 14% 86%, rgba(30, 215, 96, 0.13) 0%, transparent 68%);
+    }
+
+    .stage-shell[data-backdrop="low-ram"] .stage-ambient {
+      opacity: 0;
+    }
+
+    .stage-shell[data-backdrop="low-ram"] {
+      background: #0d0d12;
+    }
+
+    .stage-inner {
+      position: relative;
+      z-index: 1;
+      padding: 20px 24px 26px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    .stage-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 24px;
+    }
+
+    .stage-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .stage-brand img {
+      width: 24px;
+      height: 24px;
+    }
+
+    .stage-controls {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .segmented {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.11);
+      gap: 2px;
+    }
+
+    .seg-btn {
+      padding: 6px 12px;
+      border-radius: var(--radius-pill);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      transition: background-color 0.2s var(--ease-out), color 0.2s var(--ease-out), border-color 0.2s var(--ease-out);
+      white-space: nowrap;
+    }
+
+    .seg-btn:hover {
+      color: #ffffff;
+    }
+
+    .seg-btn.is-active {
+      background: rgba(30, 215, 96, 0.2);
+      color: var(--accent);
+      box-shadow: inset 0 0 0 1px rgba(30, 215, 96, 0.35);
+    }
+
+    .seg-btn--neutral.is-active {
+      background: rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    }
+
+    .stage-grid {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 32px;
+      align-items: stretch;
+    }
+
+    /* Left Now-Playing Glass Card */
+    .now-playing {
+      border-radius: 22px;
+      padding: 20px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.095) 0%, rgba(255, 255, 255, 0.03) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .album-art {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 16px 32px -10px rgba(0, 0, 0, 0.55);
+      transition: background 0.55s var(--ease-out);
+      background: linear-gradient(135deg, #f5c6d6 0%, #dc91ac 52%, #8f4c6a 100%);
+    }
+
+    .stage-shell[data-theme="ocean"] .album-art {
+      background: linear-gradient(135deg, #c7e1f7 0%, #6ea5da 52%, #2c4c7a 100%);
+    }
+
+    .album-art::before,
+    .album-art::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.16);
+      pointer-events: none;
+    }
+
+    .album-art::before {
+      width: 72%;
+      height: 72%;
+    }
+
+    .album-art::after {
+      width: 44%;
+      height: 44%;
+    }
+
+    .album-art-hanzi {
+      position: relative;
+      z-index: 1;
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: rgba(45, 16, 30, 0.88);
+      letter-spacing: 0.04em;
+      margin-bottom: 6px;
+    }
+
+    .stage-shell[data-theme="ocean"] .album-art-hanzi {
+      color: rgba(14, 30, 56, 0.88);
+    }
+
+    .album-art-sub {
+      position: relative;
+      z-index: 1;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      color: rgba(45, 16, 30, 0.68);
+      text-transform: uppercase;
+    }
+
+    .stage-shell[data-theme="ocean"] .album-art-sub {
+      color: rgba(14, 30, 56, 0.68);
+    }
+
+    .track-meta {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .track-title {
+      font-size: 1.24rem;
+      font-weight: 700;
+      line-height: 1.25;
+      color: #ffffff;
+    }
+
+    .track-pinyin {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin-top: 3px;
+      letter-spacing: 0.02em;
+    }
+
+    .track-artist {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    .scrubber-wrap {
+      margin-bottom: 16px;
+    }
+
+    .scrubber-track {
+      width: 100%;
+      height: 6px;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.15);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .scrubber-fill {
+      height: 100%;
+      width: 28%;
+      border-radius: 99px;
+      background: #ffffff;
+      transition: width 0.25s linear;
+    }
+
+    .scrubber-times {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-top: 7px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .transport {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .transport-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255, 255, 255, 0.76);
+      transition: color 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
+    }
+
+    .transport-btn:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.09);
+    }
+
+    .transport-btn--play {
+      width: 44px;
+      height: 44px;
+      background: #ffffff;
+      color: #111315;
+      box-shadow: 0 8px 22px -6px rgba(255, 255, 255, 0.45);
+    }
+
+    .transport-btn--play:hover {
+      background: #ffffff;
+      color: #111315;
+      transform: scale(1.06);
+    }
+
+    /* Right Synced Lyrics Viewport */
+    .lyrics-stage {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 420px;
+      max-height: 460px;
+      overflow-y: auto;
+      padding: 16px 8px 16px 6px;
+      scrollbar-width: none;
+      mask-image: linear-gradient(180deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
+      -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
+    }
+
+    .lyrics-stage::-webkit-scrollbar {
+      display: none;
+    }
+
+    .lyrics-list {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      padding: 28px 0;
+    }
+
+    .lyric-line {
+      text-align: left;
+      padding: 10px 14px;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: opacity 0.38s var(--ease-out), transform 0.38s var(--ease-out), background-color 0.25s ease;
+      opacity: 0.44;
+    }
+
+    .lyric-line:hover {
+      background: rgba(255, 255, 255, 0.045);
+      opacity: 0.78;
+    }
+
+    .lyric-line.is-past {
+      opacity: 0.26;
+    }
+
+    .lyric-line.is-active {
+      opacity: 1;
+      transform: translateX(6px);
+      background: rgba(255, 255, 255, 0.055);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09);
+    }
+
+    .lyric-hanzi {
+      display: block;
+      font-size: clamp(1.35rem, 2.35vw, 1.95rem);
+      font-weight: 800;
+      line-height: 1.28;
+      letter-spacing: 0.015em;
+      color: #ffffff;
+    }
+
+    .lyric-pinyin {
+      display: block;
+      font-size: clamp(0.95rem, 1.4vw, 1.16rem);
+      font-weight: 500;
+      line-height: 1.45;
+      letter-spacing: 0.02em;
+      color: #f3dce5;
+      margin-top: 4px;
+      transition: color 0.3s ease;
+    }
+
+    .stage-shell[data-theme="ocean"] .lyric-pinyin {
+      color: #cde3f9;
+    }
+
+    .lyric-line.is-active .lyric-pinyin {
+      color: #b7f7cc;
+    }
+
+    /* Pinyin-Only Primary Mode */
+    .stage-shell[data-mode="pinyin-only"] .lyric-hanzi {
+      display: none;
+    }
+
+    .stage-shell[data-mode="pinyin-only"] .lyric-pinyin {
+      font-size: clamp(1.28rem, 2.15vw, 1.78rem);
+      font-weight: 700;
+      color: #ffffff;
+      margin-top: 0;
+      letter-spacing: 0.01em;
+    }
+
+    .stage-shell[data-mode="pinyin-only"] .lyric-line.is-active .lyric-pinyin {
+      color: #ffffff;
+    }
+
+    .stage-footer-bar {
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.07);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .stage-hint {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: inline-block;
+    }
+
+    /* 4-Card Feature Grid */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+    }
+
+    .feature-card {
+      border-radius: 22px;
+      padding: 28px;
+      transition: transform 0.25s var(--ease-out), border-color 0.25s var(--ease-out);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--glass-border-hover);
+    }
+
+    .feature-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(30, 215, 96, 0.12);
+      border: 1px solid rgba(30, 215, 96, 0.28);
+      color: var(--accent);
+      margin-bottom: 18px;
+    }
+
+    .feature-icon svg {
+      width: 21px;
+      height: 21px;
+    }
+
+    .feature-title {
+      font-size: 1.12rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+      color: var(--text-primary);
+    }
+
+    .feature-text {
+      font-size: 0.92rem;
+      color: var(--text-secondary);
+      line-height: 1.65;
+    }
+
+    .feature-text code {
+      font-family: var(--font-mono);
+      font-size: 0.82em;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+    }
+
+    /* Open Source & Developer Support Footer */
+    .support-banner {
+      border-radius: 26px;
+      padding: 36px 34px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    .support-copy h2 {
+      font-size: clamp(1.35rem, 2.4vw, 1.75rem);
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      margin-bottom: 6px;
+    }
+
+    .support-copy p {
+      color: var(--text-secondary);
+      font-size: 0.94rem;
+      max-width: 520px;
+    }
+
+    .support-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .site-footer {
+      padding: 12px 0 54px;
+    }
+
+    .footer-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 0.84rem;
+      color: var(--text-muted);
+    }
+
+    .footer-credit {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .footer-credit img {
+      width: 20px;
+      height: 20px;
+    }
+
+    .footer-credit a {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .footer-credit a:hover {
+      color: var(--accent);
+    }
+
+    .footer-links {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 18px;
+    }
+
+    .footer-links a {
+      color: var(--text-secondary);
+      transition: color 0.18s ease;
+    }
+
+    .footer-links a:hover {
+      color: #ffffff;
+    }
+
+    /* Responsive Breakpoints */
+    @media (max-width: 900px) {
+      .nav-links {
+        display: none;
+      }
+
+      .stage-grid {
+        grid-template-columns: 1fr;
+        gap: 22px;
+      }
+
+      .now-playing {
+        display: grid;
+        grid-template-columns: 112px 1fr;
+        grid-template-rows: auto auto auto;
+        column-gap: 18px;
+        align-items: center;
+      }
+
+      .album-art {
+        grid-row: 1 / 4;
+        margin-bottom: 0;
+      }
+
+      .album-art-hanzi {
+        font-size: 1.15rem;
+      }
+
+      .album-art-sub {
+        font-size: 0.56rem;
+      }
+
+      .track-meta {
+        text-align: left;
+        margin-bottom: 8px;
+      }
+
+      .scrubber-wrap {
+        margin-bottom: 10px;
+      }
+
+      .transport {
+        justify-content: flex-start;
+      }
+
+      .lyrics-stage {
+        min-height: 300px;
+        max-height: 350px;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .navbar-wrap {
+        top: 10px;
+        padding: 0 12px;
+      }
+
+      .navbar {
+        border-radius: 20px;
+        padding: 10px 12px;
+      }
+
+      .nav-pill span.hide-sm {
+        display: none;
+      }
+
+      .hero {
+        padding: 46px 0 32px;
+      }
+
+      .installer-card {
+        padding: 15px;
+      }
+
+      .command-panel {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .copy-btn {
+        justify-content: center;
+      }
+
+      .marketplace-steps {
+        grid-template-columns: 1fr;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .now-playing {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+      }
+
+      .album-art {
+        max-width: 200px;
+        margin: 0 auto 14px;
+      }
+
+      .track-meta {
+        text-align: center;
+      }
+
+      .transport {
+        justify-content: center;
+      }
+
+      .support-banner {
+        padding: 26px 22px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+      .ambient-orb {
+        animation: none;
+      }
+      *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-canvas" aria-hidden="true">
+    <div class="ambient-orb ambient-orb--rose"></div>
+    <div class="ambient-orb ambient-orb--emerald"></div>
+  </div>
+  <div class="grain-overlay" aria-hidden="true"></div>
+
+  <!-- Minimal Liquid Glass Navbar -->
+  <header class="navbar-wrap">
+    <nav class="navbar" aria-label="Primary navigation">
+      <a href="#" class="brand">
+        <img src="logo.svg" alt="Spinyin-lyric logo" width="28" height="28" />
+        <span>Spinyin-lyric</span>
+        <span class="version-badge">v2.0.0</span>
+      </a>
+
+      <div class="nav-links">
+        <a href="#install" class="nav-link">Install</a>
+        <a href="#preview" class="nav-link">Live Stage</a>
+        <a href="#features" class="nav-link">Features</a>
+      </div>
+
+      <div class="nav-actions">
+        <a
+          href="https://github.com/Eugenewijaya/spinyin-lyric"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="nav-pill"
+          aria-label="Spinyin-lyric on GitHub"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2Z"/>
+          </svg>
+          <span class="hide-sm">GitHub</span>
+        </a>
+        <a
+          href="https://github.com/sponsors/Eugenewijaya"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="nav-pill nav-pill--sponsor"
+          aria-label="Sponsor Eugenewijaya on GitHub"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+          </svg>
+          <span class="hide-sm">Sponsor</span>
+        </a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Hero + Direct Above-the-Fold 1-Click Installer -->
+    <section class="hero">
+      <div class="container">
+        <div class="eyebrow">
+          <span class="eyebrow-dot" aria-hidden="true"></span>
+          <span>Standalone Spotify Extension · 100% Offline Pinyin Engine</span>
+        </div>
+
+        <h1 class="hero-title">
+          Sing Mandarin on Spotify, <span class="accent-word">syllable by syllable.</span>
+        </h1>
+
+        <p class="hero-subtitle">
+          A lightweight standalone extension for Spotify that brings instant offline Pinyin lyrics, dual or Pinyin-only views, and a calm Liquid Glass lyrics stage — no extra lyrics extensions required.
+        </p>
+
+        <div class="hero-ctas">
+          <a href="#install" id="get-started-cta" class="btn-primary">
+            <span>Get Started</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 5v14M5 12l7 7 7-7"/>
+            </svg>
+          </a>
+          <a href="#preview" class="btn-glass">
+            <span>Try Live Stage</span>
+          </a>
+          <a
+            href="https://github.com/Eugenewijaya/spinyin-lyric/releases"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn-glass"
+          >
+            <span>Releases</span>
+          </a>
+        </div>
+
+        <!-- Tabbed 1-Click Copy Installer -->
+        <div id="install" class="installer-card glass-surface" aria-label="Quick installation">
+          <div class="installer-header">
+            <div class="installer-tabs" role="tablist" aria-label="Installation method">
+              <button type="button" class="installer-tab" role="tab" id="tab-win" aria-controls="panel-win" aria-selected="true" data-tab="win">
+                Windows (PowerShell)
+              </button>
+              <button type="button" class="installer-tab" role="tab" id="tab-unix" aria-controls="panel-unix" aria-selected="false" data-tab="unix">
+                macOS / Linux
+              </button>
+              <button type="button" class="installer-tab" role="tab" id="tab-market" aria-controls="panel-market" aria-selected="false" data-tab="market">
+                Spicetify Marketplace
+              </button>
+            </div>
+            <span class="installer-note">Requires Spicetify · MIT Licensed</span>
+          </div>
+
+          <!-- Windows PowerShell Panel -->
+          <div id="panel-win" class="command-panel" role="tabpanel" aria-labelledby="tab-win">
+            <div class="command-code">
+              <span class="command-prompt" aria-hidden="true">&gt;</span>
+              <code id="cmd-win">iwr -useb https://raw.githubusercontent.com/Eugenewijaya/spinyin-lyric/main/install.ps1 | iex</code>
+            </div>
+            <button type="button" class="copy-btn" data-copy-target="cmd-win" aria-label="Copy Windows PowerShell install command">
+              <svg class="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="9" y="9" width="13" height="13" rx="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+              <span class="copy-label">Copy</span>
+            </button>
+          </div>
+
+          <!-- macOS / Linux Panel -->
+          <div id="panel-unix" class="command-panel" role="tabpanel" aria-labelledby="tab-unix" hidden>
+            <div class="command-code">
+              <span class="command-prompt" aria-hidden="true">$</span>
+              <code id="cmd-unix">curl -fsSL https://raw.githubusercontent.com/Eugenewijaya/spinyin-lyric/main/install.sh | sh</code>
+            </div>
+            <button type="button" class="copy-btn" data-copy-target="cmd-unix" aria-label="Copy macOS and Linux install command">
+              <svg class="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="9" y="9" width="13" height="13" rx="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+              <span class="copy-label">Copy</span>
+            </button>
+          </div>
+
+          <!-- Spicetify Marketplace Panel -->
+          <div id="panel-market" class="command-panel" role="tabpanel" aria-labelledby="tab-market" hidden>
+            <ol class="marketplace-steps">
+              <li class="marketplace-step">
+                <div class="step-num">1</div>
+                <div>Open <strong>Spotify</strong> and open the <strong>Marketplace</strong> tab in the sidebar.</div>
+              </li>
+              <li class="marketplace-step">
+                <div class="step-num">2</div>
+                <div>Switch to <strong>Extensions</strong> and search for <strong>Spinyin-lyric</strong>.</div>
+              </li>
+              <li class="marketplace-step">
+                <div class="step-num">3</div>
+                <div>Click <strong>Install</strong> and reload Spotify — the stage button appears in your playbar.</div>
+              </li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Live Liquid Glass Lyrics Preview -->
+    <section id="preview" class="section">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Interactive Preview</div>
+            <h2 class="section-title">Experience the Liquid Glass Stage</h2>
+          </div>
+          <p class="section-desc">
+            Switch display modes, cycle tone formats, toggle Ambient vs Low-RAM backdrop, or click any lyric line to seek in real time.
+          </p>
+        </div>
+
+        <div id="live-stage" class="stage-shell" data-mode="dual" data-tone="marks" data-backdrop="ambient" data-theme="rose">
+          <div class="stage-ambient" aria-hidden="true"></div>
+          <div class="stage-inner">
+            <!-- Top Stage Control Bar -->
+            <div class="stage-topbar">
+              <div class="stage-brand">
+                <img src="logo.svg" alt="" width="24" height="24" />
+                <span>Spinyin-lyric</span>
+              </div>
+
+              <div class="stage-controls">
+                <!-- Display Mode -->
+                <div class="segmented" role="group" aria-label="Lyric display mode">
+                  <button type="button" class="seg-btn is-active" data-set-mode="dual" aria-pressed="true">Hanzi + Pinyin</button>
+                  <button type="button" class="seg-btn" data-set-mode="pinyin-only" aria-pressed="false">Pinyin Only</button>
+                </div>
+
+                <!-- Tone Style -->
+                <div class="segmented" role="group" aria-label="Pinyin tone format">
+                  <button type="button" class="seg-btn seg-btn--neutral is-active" data-set-tone="marks" aria-pressed="true">nǐ hǎo</button>
+                  <button type="button" class="seg-btn seg-btn--neutral" data-set-tone="num" aria-pressed="false">ni3 hao3</button>
+                  <button type="button" class="seg-btn seg-btn--neutral" data-set-tone="none" aria-pressed="false">ni hao</button>
+                </div>
+
+                <!-- Backdrop Toggle -->
+                <div class="segmented" role="group" aria-label="Stage backdrop mode">
+                  <button type="button" class="seg-btn seg-btn--neutral is-active" data-set-backdrop="ambient" aria-pressed="true">Ambient</button>
+                  <button type="button" class="seg-btn seg-btn--neutral" data-set-backdrop="low-ram" aria-pressed="false">Low RAM</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Two-Column Stage Body -->
+            <div class="stage-grid">
+              <!-- Left Now-Playing Card -->
+              <aside class="now-playing" aria-label="Demo playback card">
+                <div class="album-art" aria-hidden="true">
+                  <span id="stage-art-hanzi" class="album-art-hanzi">恋爱频率</span>
+                  <span id="stage-art-sub" class="album-art-sub">LOVE FREQUENCY</span>
+                </div>
+
+                <div class="track-meta">
+                  <div id="stage-track-title" class="track-title">恋爱频率</div>
+                  <div id="stage-track-pinyin" class="track-pinyin">liàn ài pín lǜ</div>
+                  <div id="stage-track-artist" class="track-artist">Sasablue</div>
+                </div>
+
+                <div class="scrubber-wrap">
+                  <div id="stage-scrubber" class="scrubber-track" role="slider" aria-label="Demo track progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="28" tabindex="0">
+                    <div id="stage-scrubber-fill" class="scrubber-fill"></div>
+                  </div>
+                  <div class="scrubber-times">
+                    <span id="stage-time-elapsed">1:12</span>
+                    <span id="stage-time-total">3:19</span>
+                  </div>
+                </div>
+
+                <div class="transport">
+                  <button type="button" id="btn-prev-track" class="transport-btn" aria-label="Previous demo track" title="Switch demo track">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/>
+                    </svg>
+                  </button>
+                  <button type="button" id="btn-toggle-play" class="transport-btn transport-btn--play" aria-label="Pause demo playback" title="Play / Pause">
+                    <svg id="icon-pause" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <rect x="6" y="5" width="4" height="14" rx="1.2"/>
+                      <rect x="14" y="5" width="4" height="14" rx="1.2"/>
+                    </svg>
+                    <svg id="icon-play" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" hidden>
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </button>
+                  <button type="button" id="btn-next-track" class="transport-btn" aria-label="Next demo track" title="Switch demo track">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+                    </svg>
+                  </button>
+                </div>
+              </aside>
+
+              <!-- Right Synced Lyrics Scroller -->
+              <div class="lyrics-stage" aria-label="Interactive synced lyrics">
+                <div id="stage-lyrics-list" class="lyrics-list"></div>
+              </div>
+            </div>
+
+            <div class="stage-footer-bar">
+              <div class="stage-hint">
+                <span class="live-dot" aria-hidden="true"></span>
+                <span>Click any lyric line to seek · Use Prev / Next to preview adaptive album colors</span>
+              </div>
+              <span id="stage-mode-readout">Hanzi + Pinyin · nǐ hǎo</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Concise 4-Card Feature Grid -->
+    <section id="features" class="section">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Built With Restraint</div>
+            <h2 class="section-title">Everything you need to sing along.</h2>
+          </div>
+          <p class="section-desc">
+            Designed to feel native inside Spotify — fast to install, calm to read, and light on memory.
+          </p>
+        </div>
+
+        <div class="features-grid">
+          <article class="feature-card glass-surface">
+            <div class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="16" rx="3"/>
+                <path d="M9 4v16"/>
+                <path d="M13 10h5M13 14h3"/>
+              </svg>
+            </div>
+            <h3 class="feature-title">Standalone Liquid Glass Stage</h3>
+            <p class="feature-text">
+              Open a full frosted-glass lyrics overlay straight from Spotify's playbar with synced click-to-seek lines, adaptive album glow, and a static Low-RAM backdrop toggle.
+            </p>
+          </article>
+
+          <article class="feature-card glass-surface">
+            <div class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                <circle cx="12" cy="12" r="3.5"/>
+              </svg>
+            </div>
+            <h3 class="feature-title">100% Offline Pinyin Engine</h3>
+            <p class="feature-text">
+              Bundled <code>pinyin-pro</code> handles Mandarin transliteration locally with accurate tone marks and instant response — no external API keys or rate limits for Pinyin.
+            </p>
+          </article>
+
+          <article class="feature-card glass-surface">
+            <div class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 7h10M4 12h16M4 17h12"/>
+                <path d="m17 5 2 2 2-2"/>
+              </svg>
+            </div>
+            <h3 class="feature-title">Dual &amp; Pinyin-Only Modes</h3>
+            <p class="feature-text">
+              Read <code>Hanzi + Pinyin</code> side-by-side or switch to clean <code>Pinyin Only</code> across three tone styles (<code>nǐ hǎo</code>, <code>ni3 hao3</code>, <code>ni hao</code>), plus Spinyin Studio for manual lyrics.
+            </p>
+          </article>
+
+          <article class="feature-card glass-surface">
+            <div class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
+              </svg>
+            </div>
+            <h3 class="feature-title">Lightweight &amp; Cross-Platform</h3>
+            <p class="feature-text">
+              Zero heavy WebGL shaders, near-zero CPU when the stage is closed, and clean one-line installers for Windows PowerShell, macOS, Linux, and Spicetify Marketplace.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Developer Support & Open Source Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="support-banner glass-surface">
+        <div class="support-copy">
+          <h2>Open source &amp; community supported</h2>
+          <p>
+            Spinyin-lyric is free under the MIT License. Star the repository, share feedback in Issues, or support ongoing maintenance on GitHub Sponsors.
+          </p>
+        </div>
+        <div class="support-actions">
+          <a
+            href="https://github.com/sponsors/Eugenewijaya"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn-primary"
+          >
+            <span>Sponsor @Eugenewijaya</span>
+          </a>
+          <a
+            href="https://github.com/Eugenewijaya/spinyin-lyric"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn-glass"
+          >
+            <span>Star on GitHub</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="footer-bar">
+        <div class="footer-credit">
+          <img src="logo.svg" alt="" width="20" height="20" />
+          <span>
+            Created by
+            <a href="https://github.com/Eugenewijaya" target="_blank" rel="noopener noreferrer">@Eugenewijaya</a>
+            · MIT License
+          </span>
+        </div>
+
+        <div class="footer-links">
+          <a href="https://github.com/Eugenewijaya/spinyin-lyric" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://github.com/Eugenewijaya/spinyin-lyric/releases" target="_blank" rel="noopener noreferrer">Releases</a>
+          <a href="https://github.com/sponsors/Eugenewijaya" target="_blank" rel="noopener noreferrer">Sponsors</a>
+          <a href="https://github.com/Eugenewijaya/spinyin-lyric/issues" target="_blank" rel="noopener noreferrer">Issues</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      "use strict";
+
+      /* -----------------------------
+       * 1. Installer Tabs & Copy Logic
+       * ----------------------------- */
+      const tabs = document.querySelectorAll(".installer-tab");
+      const panels = {
+        win: document.getElementById("panel-win"),
+        unix: document.getElementById("panel-unix"),
+        market: document.getElementById("panel-market")
+      };
+
+      tabs.forEach(function (tab) {
+        tab.addEventListener("click", function () {
+          const target = tab.getAttribute("data-tab");
+          tabs.forEach(function (t) {
+            t.setAttribute("aria-selected", t === tab ? "true" : "false");
+          });
+          Object.keys(panels).forEach(function (key) {
+            if (panels[key]) {
+              panels[key].hidden = key !== target;
+            }
+          });
+        });
+      });
+
+      const getStartedCta = document.getElementById("get-started-cta");
+      const installerCard = document.getElementById("install");
+      if (getStartedCta && installerCard) {
+        getStartedCta.addEventListener("click", function () {
+          installerCard.classList.add("is-highlighted");
+          window.setTimeout(function () {
+            installerCard.classList.remove("is-highlighted");
+          }, 1600);
+        });
+      }
+
+      const CHECK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+      const COPY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+
+      function copyText(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          return navigator.clipboard.writeText(text);
+        }
+        return new Promise(function (resolve, reject) {
+          const area = document.createElement("textarea");
+          area.value = text;
+          area.style.position = "fixed";
+          area.style.opacity = "0";
+          document.body.appendChild(area);
+          area.select();
+          try {
+            document.execCommand("copy");
+            resolve();
+          } catch (err) {
+            reject(err);
+          } finally {
+            document.body.removeChild(area);
+          }
+        });
+      }
+
+      document.querySelectorAll(".copy-btn").forEach(function (btn) {
+        let timer = null;
+        btn.addEventListener("click", function () {
+          const targetId = btn.getAttribute("data-copy-target");
+          const codeEl = document.getElementById(targetId);
+          if (!codeEl) return;
+          copyText(codeEl.textContent.trim()).then(function () {
+            btn.classList.add("is-copied");
+            btn.innerHTML = CHECK_ICON + '<span class="copy-label">Copied!</span>';
+            if (timer) window.clearTimeout(timer);
+            timer = window.setTimeout(function () {
+              btn.classList.remove("is-copied");
+              btn.innerHTML = COPY_ICON + '<span class="copy-label">Copy</span>';
+            }, 2000);
+          });
+        });
+      });
+
+      /* -----------------------------------------
+       * 2. Interactive Live Liquid Glass Stage
+       * ----------------------------------------- */
+      const DEMO_TRACKS = [
+        {
+          theme: "rose",
+          artHanzi: "恋爱频率",
+          artSub: "LOVE FREQUENCY",
+          title: "恋爱频率",
+          titlePinyin: {
+            marks: "liàn ài pín lǜ",
+            num: "lian4 ai4 pin2 lv4",
+            none: "lian ai pin lv"
+          },
+          artist: "Sasablue",
+          durationSec: 199,
+          lines: [
+            {
+              timeSec: 52,
+              hanzi: "心跳悄悄跟上你的节奏",
+              marks: "xīn tiào qiāo qiāo gēn shàng nǐ de jié zòu",
+              num: "xin1 tiao4 qiao1 qiao1 gen1 shang4 ni3 de jie2 zou4",
+              none: "xin tiao qiao qiao gen shang ni de jie zou"
+            },
+            {
+              timeSec: 68,
+              hanzi: "一遍一遍慢慢累积",
+              marks: "yí biàn yí biàn màn màn lěi jī",
+              num: "yi2 bian4 yi2 bian4 man4 man4 lei3 ji1",
+              none: "yi bian yi bian man man lei ji"
+            },
+            {
+              timeSec: 84,
+              hanzi: "累积成永恒的记忆",
+              marks: "lěi jī chéng yǒng héng de jì yì",
+              num: "lei3 ji1 cheng2 yong3 heng2 de ji4 yi4",
+              none: "lei ji cheng yong heng de ji yi"
+            },
+            {
+              timeSec: 102,
+              hanzi: "想够一万遍就在一起",
+              marks: "xiǎng gòu yí wàn biàn jiù zài yì qǐ",
+              num: "xiang3 gou4 yi2 wan4 bian4 jiu4 zai4 yi4 qi3",
+              none: "xiang gou yi wan bian jiu zai yi qi"
+            },
+            {
+              timeSec: 121,
+              hanzi: "把温柔调到同个频率",
+              marks: "bǎ wēn róu tiáo dào tóng gè pín lǜ",
+              num: "ba3 wen1 rou2 tiao2 dao4 tong2 ge4 pin2 lv4",
+              none: "ba wen rou tiao dao tong ge pin lv"
+            },
+            {
+              timeSec: 140,
+              hanzi: "整个夜晚都为你清晰",
+              marks: "zhěng gè yè wǎn dōu wèi nǐ qīng xī",
+              num: "zheng3 ge4 ye4 wan3 dou1 wei4 ni3 qing1 xi1",
+              none: "zheng ge ye wan dou wei ni qing xi"
+            }
+          ]
+        },
+        {
+          theme: "ocean",
+          artHanzi: "晴天",
+          artSub: "SUNNY DAY",
+          title: "晴天",
+          titlePinyin: {
+            marks: "qíng tiān",
+            num: "qing2 tian1",
+            none: "qing tian"
+          },
+          artist: "周杰伦 · Jay Chou",
+          durationSec: 269,
+          lines: [
+            {
+              timeSec: 46,
+              hanzi: "故事的小黄花",
+              marks: "gù shì de xiǎo huáng huā",
+              num: "gu4 shi4 de xiao3 huang2 hua1",
+              none: "gu shi de xiao huang hua"
+            },
+            {
+              timeSec: 63,
+              hanzi: "从出生那年就飘着",
+              marks: "cóng chū shēng nà nián jiù piāo zhe",
+              num: "cong2 chu1 sheng1 na4 nian2 jiu4 piao1 zhe",
+              none: "cong chu sheng na nian jiu piao zhe"
+            },
+            {
+              timeSec: 81,
+              hanzi: "童年的荡秋千",
+              marks: "tóng nián de dàng qiū qiān",
+              num: "tong2 nian2 de dang4 qiu1 qian1",
+              none: "tong nian de dang qiu qian"
+            },
+            {
+              timeSec: 98,
+              hanzi: "随记忆一直晃到现在",
+              marks: "suí jì yì yì zhí huàng dào xiàn zài",
+              num: "sui2 ji4 yi4 yi4 zhi2 huang4 dao4 xian4 zai4",
+              none: "sui ji yi yi zhi huang dao xian zai"
+            },
+            {
+              timeSec: 118,
+              hanzi: "吹着前奏望着天空",
+              marks: "chuī zhe qián zòu wàng zhe tiān kōng",
+              num: "chui1 zhe qian2 zou4 wang4 zhe tian1 kong1",
+              none: "chui zhe qian zou wang zhe tian kong"
+            },
+            {
+              timeSec: 138,
+              hanzi: "我想起花瓣试着掉落",
+              marks: "wǒ xiǎng qǐ huā bàn shì zhe diào luò",
+              num: "wo3 xiang3 qi3 hua1 ban4 shi4 zhe diao4 luo4",
+              none: "wo xiang qi hua ban shi zhe diao luo"
+            }
+          ]
+        }
+      ];
+
+      const stageEl = document.getElementById("live-stage");
+      const artHanziEl = document.getElementById("stage-art-hanzi");
+      const artSubEl = document.getElementById("stage-art-sub");
+      const titleEl = document.getElementById("stage-track-title");
+      const titlePinyinEl = document.getElementById("stage-track-pinyin");
+      const artistEl = document.getElementById("stage-track-artist");
+      const scrubberEl = document.getElementById("stage-scrubber");
+      const scrubberFillEl = document.getElementById("stage-scrubber-fill");
+      const elapsedEl = document.getElementById("stage-time-elapsed");
+      const totalEl = document.getElementById("stage-time-total");
+      const lyricsListEl = document.getElementById("stage-lyrics-list");
+      const modeReadoutEl = document.getElementById("stage-mode-readout");
+      const playBtn = document.getElementById("btn-toggle-play");
+      const iconPause = document.getElementById("icon-pause");
+      const iconPlay = document.getElementById("icon-play");
+      const prevBtn = document.getElementById("btn-prev-track");
+      const nextBtn = document.getElementById("btn-next-track");
+
+      const state = {
+        trackIdx: 0,
+        activeLine: 1,
+        mode: "dual",
+        tone: "marks",
+        backdrop: "ambient",
+        playing: true
+      };
+
+      function formatTime(sec) {
+        const m = Math.floor(sec / 60);
+        const s = Math.floor(sec % 60);
+        return m + ":" + (s < 10 ? "0" + s : s);
+      }
+
+      function updateReadout() {
+        const modeLabel = state.mode === "dual" ? "Hanzi + Pinyin" : "Pinyin Only";
+        const toneMap = { marks: "nǐ hǎo", num: "ni3 hao3", none: "ni hao" };
+        modeReadoutEl.textContent = modeLabel + " · " + toneMap[state.tone];
+      }
+
+      function updateProgress() {
+        const track = DEMO_TRACKS[state.trackIdx];
+        const line = track.lines[state.activeLine] || track.lines[0];
+        const pct = Math.min(100, Math.max(4, Math.round((line.timeSec / track.durationSec) * 100)));
+        scrubberFillEl.style.width = pct + "%";
+        scrubberEl.setAttribute("aria-valuenow", String(pct));
+        elapsedEl.textContent = formatTime(line.timeSec);
+        totalEl.textContent = formatTime(track.durationSec);
+      }
+
+      function renderTrack() {
+        const track = DEMO_TRACKS[state.trackIdx];
+        stageEl.setAttribute("data-theme", track.theme);
+        artHanziEl.textContent = track.artHanzi;
+        artSubEl.textContent = track.artSub;
+        titleEl.textContent = track.title;
+        titlePinyinEl.textContent = track.titlePinyin[state.tone];
+        artistEl.textContent = track.artist;
+
+        // Build lyrics DOM safely without innerHTML
+        lyricsListEl.textContent = "";
+        track.lines.forEach(function (line, idx) {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "lyric-line";
+          if (idx < state.activeLine) btn.classList.add("is-past");
+          if (idx === state.activeLine) btn.classList.add("is-active");
+          btn.setAttribute("data-line-idx", String(idx));
+
+          const hanziSpan = document.createElement("span");
+          hanziSpan.className = "lyric-hanzi";
+          hanziSpan.textContent = line.hanzi;
+
+          const pinyinSpan = document.createElement("span");
+          pinyinSpan.className = "lyric-pinyin";
+          pinyinSpan.textContent = line[state.tone];
+
+          btn.appendChild(hanziSpan);
+          btn.appendChild(pinyinSpan);
+
+          btn.addEventListener("click", function () {
+            state.activeLine = idx;
+            syncActiveLine();
+            resetAutoAdvance();
+          });
+
+          lyricsListEl.appendChild(btn);
+        });
+
+        updateProgress();
+        updateReadout();
+      }
+
+      function syncActiveLine() {
+        const rows = lyricsListEl.querySelectorAll(".lyric-line");
+        rows.forEach(function (row, idx) {
+          row.classList.toggle("is-past", idx < state.activeLine);
+          row.classList.toggle("is-active", idx === state.activeLine);
+        });
+        updateProgress();
+      }
+
+      function updateToneTextOnly() {
+        const track = DEMO_TRACKS[state.trackIdx];
+        titlePinyinEl.textContent = track.titlePinyin[state.tone];
+        const pinyinEls = lyricsListEl.querySelectorAll(".lyric-pinyin");
+        pinyinEls.forEach(function (el, idx) {
+          if (track.lines[idx]) {
+            el.textContent = track.lines[idx][state.tone];
+          }
+        });
+        updateReadout();
+      }
+
+      // Stage control listeners
+      document.querySelectorAll("[data-set-mode]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          state.mode = btn.getAttribute("data-set-mode");
+          stageEl.setAttribute("data-mode", state.mode);
+          document.querySelectorAll("[data-set-mode]").forEach(function (b) {
+            const active = b === btn;
+            b.classList.toggle("is-active", active);
+            b.setAttribute("aria-pressed", active ? "true" : "false");
+          });
+          updateReadout();
+        });
+      });
+
+      document.querySelectorAll("[data-set-tone]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          state.tone = btn.getAttribute("data-set-tone");
+          stageEl.setAttribute("data-tone", state.tone);
+          document.querySelectorAll("[data-set-tone]").forEach(function (b) {
+            const active = b === btn;
+            b.classList.toggle("is-active", active);
+            b.setAttribute("aria-pressed", active ? "true" : "false");
+          });
+          updateToneTextOnly();
+        });
+      });
+
+      document.querySelectorAll("[data-set-backdrop]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          state.backdrop = btn.getAttribute("data-set-backdrop");
+          stageEl.setAttribute("data-backdrop", state.backdrop);
+          document.querySelectorAll("[data-set-backdrop]").forEach(function (b) {
+            const active = b === btn;
+            b.classList.toggle("is-active", active);
+            b.setAttribute("aria-pressed", active ? "true" : "false");
+          });
+        });
+      });
+
+      // Scrubber click-to-seek & keyboard support
+      scrubberEl.addEventListener("click", function (ev) {
+        const rect = scrubberEl.getBoundingClientRect();
+        const ratio = Math.min(1, Math.max(0, (ev.clientX - rect.left) / rect.width));
+        const linesCount = DEMO_TRACKS[state.trackIdx].lines.length;
+        state.activeLine = Math.min(linesCount - 1, Math.floor(ratio * linesCount));
+        syncActiveLine();
+        resetAutoAdvance();
+      });
+
+      scrubberEl.addEventListener("keydown", function (ev) {
+        const linesCount = DEMO_TRACKS[state.trackIdx].lines.length;
+        if (ev.key === "ArrowRight" || ev.key === "ArrowUp") {
+          ev.preventDefault();
+          state.activeLine = Math.min(linesCount - 1, state.activeLine + 1);
+          syncActiveLine();
+          resetAutoAdvance();
+        } else if (ev.key === "ArrowLeft" || ev.key === "ArrowDown") {
+          ev.preventDefault();
+          state.activeLine = Math.max(0, state.activeLine - 1);
+          syncActiveLine();
+          resetAutoAdvance();
+        }
+      });
+
+      // Transport controls
+      function syncPlayButton() {
+        iconPause.hidden = !state.playing;
+        iconPlay.hidden = state.playing;
+        playBtn.setAttribute("aria-label", state.playing ? "Pause demo playback" : "Play demo playback");
+      }
+
+      playBtn.addEventListener("click", function () {
+        state.playing = !state.playing;
+        syncPlayButton();
+        if (state.playing) {
+          resetAutoAdvance();
+        } else {
+          stopAutoAdvance();
+        }
+      });
+
+      function switchTrack(delta) {
+        state.trackIdx = (state.trackIdx + delta + DEMO_TRACKS.length) % DEMO_TRACKS.length;
+        state.activeLine = 1;
+        renderTrack();
+        resetAutoAdvance();
+      }
+
+      prevBtn.addEventListener("click", function () { switchTrack(-1); });
+      nextBtn.addEventListener("click", function () { switchTrack(1); });
+
+      let autoTimer = null;
+      const prefersReducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      function stopAutoAdvance() {
+        if (autoTimer) {
+          window.clearInterval(autoTimer);
+          autoTimer = null;
+        }
+      }
+
+      function resetAutoAdvance() {
+        stopAutoAdvance();
+        if (!state.playing || prefersReducedMotion) return;
+        autoTimer = window.setInterval(function () {
+          if (document.hidden) return;
+          const totalLines = DEMO_TRACKS[state.trackIdx].lines.length;
+          state.activeLine = (state.activeLine + 1) % totalLines;
+          syncActiveLine();
+        }, 3200);
+      }
+
+      // Initialize live stage
+      renderTrack();
+      syncPlayButton();
+      resetAutoAdvance();
+    })();
+  </script>
+</body>
+</html>

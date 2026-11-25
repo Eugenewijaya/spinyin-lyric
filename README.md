@@ -1,17 +1,26 @@
 <div align="center">
 
+<img src="logo.svg" width="72" alt="Spinyin-lyric logo" />
+
 # Spinyin-lyric for Spotify
 
-**Real-time offline Mandarin (Hanzi) to Pinyin smart lyrics for Spotify.**
+**Standalone Liquid Glass lyrics stage & 100% offline Mandarin Pinyin smart lyrics for Spotify.**
 
-[![Version](https://img.shields.io/badge/version-v1.1.0-1ed760?style=flat-square)](https://github.com/Eugenewijaya/spinyin-lyric/releases)
-[![Spicetify](https://img.shields.io/badge/Spicetify-Marketplace%20Ready-1db954?style=flat-square&logo=spotify&logoColor=white)](https://spicetify.app)
-[![Offline](https://img.shields.io/badge/engine-100%25%20offline-22262e?style=flat-square)](#features)
-[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
+**English** | [简体中文](README.zh-CN.md)
 
-<br/>
+[![Version](https://img.shields.io/badge/version-v2.0.0-1ed760?style=flat-square)](https://github.com/Eugenewijaya/spinyin-lyric/releases)
+[![Spicetify Marketplace](https://img.shields.io/badge/Spicetify-Marketplace-1db954?style=flat-square&logo=spotify&logoColor=white)](https://spicetify.app)
+[![Live Site](https://img.shields.io/badge/Live%20Site-spinyin--lyric-0ea5e9?style=flat-square)](https://eugenewijaya.github.io/spinyin-lyric/)
+[![Offline Engine](https://img.shields.io/badge/Offline%20Engine-pinyin--pro-22262e?style=flat-square)](#key-features)
+[![MIT License](https://img.shields.io/badge/MIT%20License-open%20source-blue?style=flat-square)](LICENSE)
 
-<img src="preview.svg" alt="Spinyin-lyric for Spotify live Pinyin preview" width="820"/>
+<br />
+
+<a href="https://eugenewijaya.github.io/spinyin-lyric/">
+  <img src="preview.svg" alt="Spinyin-lyric for Spotify live preview" width="820" />
+</a>
+
+<sub>Explore the interactive preview & installer guide on the <a href="https://eugenewijaya.github.io/spinyin-lyric/"><strong>Spinyin-lyric Website →</strong></a></sub>
 
 </div>
 
@@ -19,12 +28,18 @@
 
 ## Quick Install
 
-### Windows (PowerShell — Recommended)
+Requires [Spicetify](https://spicetify.app/docs/getting-started) installed on Spotify Desktop.
 
-Requires [Spicetify](https://spicetify.app/docs/getting-started) installed. Run this single command in PowerShell:
+### Windows (PowerShell)
 
 ```powershell
 iwr -useb https://raw.githubusercontent.com/Eugenewijaya/spinyin-lyric/main/install.ps1 | iex
+```
+
+### macOS / Linux
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Eugenewijaya/spinyin-lyric/main/install.sh | sh
 ```
 
 ### Spicetify Marketplace
@@ -33,43 +48,24 @@ iwr -useb https://raw.githubusercontent.com/Eugenewijaya/spinyin-lyric/main/inst
 2. Search for **Spinyin-lyric for Spotify**.
 3. Click **Install** and reload Spotify.
 
-### macOS / Linux
+---
 
-```bash
-EXT_DIR="$(dirname "$(spicetify -c)")/Extensions" && mkdir -p "$EXT_DIR" && curl -fsSL https://raw.githubusercontent.com/Eugenewijaya/spinyin-lyric/main/spinyin-lyric.js -o "$EXT_DIR/spinyin-lyric.js" && spicetify config extensions spinyin-lyric.js && spicetify apply
-```
+## Key Features
+
+- **Standalone Liquid Glass Lyrics Stage** — Open an integrated, frosted liquid-glass lyrics view directly from the Spotify playbar (or **Profile Menu → Open Spinyin Lyrics Stage**, close anytime with `Escape`). Works independently with synced lyrics, click-to-seek on any line, interactive playback controls, fullscreen mode, and a toggleable **Ambient** album-art or **Low-RAM** dark backdrop.
+- **100% Offline Pinyin Engine** — Bundles [`pinyin-pro`](https://github.com/zh-lx/pinyin-pro) directly inside `spinyin-lyric.js` for instant local Hanzi-to-Pinyin conversion with zero external translation API calls and full CSP safety. Handles Simplified (`简体`), Traditional (`繁體`), context-aware polyphones (`音乐` → `yīn yuè`, `银行` → `yín háng`), tone sandhi, and mixed Chinese/English lines.
+- **Dual & Pinyin-Only Display Modes** — Switch seamlessly between **Hanzi + Pinyin** (dual running lyrics) and **Pinyin Only** (hides Hanzi so crisp, full-size Pinyin becomes the primary running lyric).
+- **3 Tone Styles** — Cycle between **Tone Marks** (`nǐ hǎo`), **Tone Numbers** (`ni3 hao3`), and **Plain** (`ni hao`) at any time.
+- **Floating Quick Pill** — A compact glass control pill appears automatically when Mandarin lyrics are on screen so you can toggle ON/OFF, switch between `Hanzi + Pinyin` and `Pinyin Only`, or cycle tone styles in one click.
+- **Spinyin Studio Modal** — Open from the playbar, stage toolbar, or Profile menu to configure annotation scopes, inspect the currently playing track, or paste any Mandarin text for an instant Ruby-annotated preview with one-click copy.
+- **Automatic Native Lyrics & Metadata Pinyin** — Automatically adds Pinyin to Spotify's native lyrics views as well as Mandarin song titles, albums, and artist names across Spotify desktop layouts.
+- **Lightweight & Respectful** — Zero CPU overhead when the stage is closed, bounded in-memory caching, and full support for `prefers-reduced-motion`.
 
 ---
 
-## Features
+## Tone Styles
 
-- **Real-time running lyrics Pinyin** — automatically displays Pinyin right underneath every Mandarin lyric line and highlights in sync with the active line.
-- **100% offline engine** — bundles `pinyin-pro` locally inside `spinyin-lyric.js` for `0ms` conversion with zero external API calls, zero rate limits, and full CSP safety.
-- **Accurate Mandarin handling** — supports Simplified (`简体`), Traditional (`繁體`), context-aware polyphones (`音乐` → `yīn yuè`, `银行` → `yín háng`), tone sandhi, and mixed Chinese/English lines.
-- **Works across lyrics extensions** — automatically connects to Spotify's native lyrics as well as popular Spicetify lyrics extensions without breaking React rendering or karaoke animations.
-- **Dual or Pinyin-Only display mode** — choose between **Hanzi + Pinyin** or **Pinyin Only** (hides Hanzi so crisp, unblurred Pinyin becomes the primary running lyric — especially sharp in Liquid Lyrics).
-- **On-screen floating pill** — subtle glass control pill (`拼 Spinyin ON · Hanzi+Py / Pinyin Only · nǐ hǎo`) appears only while Chinese lyrics are visible, letting you toggle ON/OFF, switch display mode, or cycle tone formats in one click.
-- **Spinyin Studio modal** — click the `拼` icon on the Spotify playbar (or **Profile Menu → Spinyin-lyric**) to configure scopes, inspect the current track, or paste any Mandarin text for ruby-annotated Pinyin and one-click copy.
-- **Lightweight & motion-aware** — bounded memory cache, debounced DOM observer, pauses idle sweeps when hidden, and respects `prefers-reduced-motion`.
-
----
-
-## Compatibility
-
-| Lyrics Engine / Platform | Supported | Notes |
-| --- | :---: | --- |
-| Spotify Native Lyrics (Fullscreen, Cinema, Now Playing Card, Track Page) | Yes | Syncs with active & passed line states |
-| Liquid Lyrics (`NMWplays/Liquid-Lyrics`) | Yes | Supports running lines & left song card; skips duplicate romanization |
-| Beautiful Lyrics (`surfbryce/beautiful-lyrics`) | Yes | Flex-safe Pinyin line below lead & background vocals |
-| Spicy Lyrics (`Spikerko/spicy-lyrics`) | Yes | Works with synced line views |
-| Lyrics Plus (Spicetify Built-in) | Yes | Works alongside native Lyrics Plus views |
-| Windows / macOS / Linux (Spotify 1.2.x & 1.3.x+) | Yes | Tested on Spotify `1.3.10+` & Spicetify `v2.46.7` |
-
----
-
-## Tone Formats
-
-Switch anytime via the floating pill, Playbar Studio modal, or Profile menu:
+Switch anytime from the Liquid Glass Stage toolbar, Floating Quick Pill, Spinyin Studio modal, or Profile menu:
 
 | Style | Example (`月亮代表我的心`) |
 | --- | --- |
@@ -81,12 +77,18 @@ Switch anytime via the floating pill, Playbar Studio modal, or Profile menu:
 
 ## Update & Uninstall
 
-**Update (Windows PowerShell):** re-run the install command above.
+**Update:** Re-run the Quick Install command for your platform.
 
 **Uninstall (Windows PowerShell):**
 
 ```powershell
 $env:SPINYIN_UNINSTALL="1"; iwr -useb https://raw.githubusercontent.com/Eugenewijaya/spinyin-lyric/main/install.ps1 | iex; Remove-Item Env:SPINYIN_UNINSTALL
+```
+
+**Uninstall (macOS / Linux):**
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Eugenewijaya/spinyin-lyric/main/install.sh | sh -s -- --uninstall
 ```
 
 ---
@@ -95,29 +97,33 @@ $env:SPINYIN_UNINSTALL="1"; iwr -useb https://raw.githubusercontent.com/Eugenewi
 
 This project follows [Semantic Versioning](https://semver.org/).
 
-### `v1.1.0`
-- Added **Pinyin Only (Main Lyric)** mode to hide Hanzi and display Pinyin as the primary full-size running lyric.
-- Fixed Pinyin blur / gradient washout in **Liquid Lyrics** during active melody progression by overriding transparent text-fill and heavy glow filters.
-- Added 1-click display mode toggle (`Hanzi+Py` ↔ `Pinyin Only`) directly in the floating smart lyrics pill, Spinyin Studio modal, and Profile menu.
+### `v2.0.0`
+- Added the built-in **Standalone Liquid Glass Lyrics Stage** accessible from the Spotify playbar and Profile menu (`Escape` to close, plus Fullscreen toggle).
+- Added independent synced lyrics fetching with in-memory track caching, smooth centered active-line scrolling, click-to-seek, and integrated playback & scrubber controls.
+- Added adaptive album-art **Ambient** backdrop alongside a toggleable **Low-RAM** dark backdrop mode (`Ambient` / `Low RAM`).
+- Added cross-platform POSIX installer script (`install.sh` with `--uninstall` support), Simplified Chinese documentation (`README.zh-CN.md`), brand icon assets, and the live project site.
 
-### `v1.0.0` (Initial Open-Source Release)
-- Bundled offline `pinyin-pro@3.28.1` engine with UMD isolation.
-- Universal smart lyrics support (Spotify Native, Liquid Lyrics, Beautiful Lyrics, Spicy Lyrics, Lyrics Plus).
-- Auto-Pinyin for song titles, albums, and artists across Spotify 1.3.x layouts.
-- Floating smart lyrics pill, Spinyin Studio modal with Ruby preview, and refined CSS transitions.
-- One-line PowerShell installer (`install.ps1`) and Spicetify Marketplace manifest (`manifest.json`).
+### `v1.1.0`
+- Added **Pinyin Only** primary lyric mode to hide Hanzi and render crisp, full-size Pinyin as the main running lyric.
+- Improved active-line legibility and removed blur/washout artifacts on highlighted Pinyin lines.
+- Added 1-click display mode switching (`Hanzi + Pinyin` ↔ `Pinyin Only`) across the Floating Quick Pill, Spinyin Studio modal, and Profile menu.
+
+### `v1.0.0`
+- Initial open-source release with bundled offline `pinyin-pro` engine and isolated UMD loading.
+- Automatic real-time Pinyin annotation for Spotify native lyrics, track titles, albums, and artists.
+- Floating Quick Pill, Spinyin Studio modal with Ruby preview, 3 tone styles, PowerShell installer (`install.ps1`), and Spicetify Marketplace manifest.
 
 ---
 
 ## Support the Developer
 
-If **Spinyin-lyric for Spotify** makes listening to Mandarin music more enjoyable, you can support ongoing maintenance and updates:
+If **Spinyin-lyric for Spotify** helps you enjoy and sing along to Mandarin music, consider supporting ongoing maintenance and updates by [@Eugenewijaya](https://github.com/Eugenewijaya):
 
-- **Star this repository** on GitHub so more listeners can discover it: [Eugenewijaya/spinyin-lyric](https://github.com/Eugenewijaya/spinyin-lyric)
-- **Sponsor the developer**: [github.com/sponsors/Eugenewijaya](https://github.com/sponsors/Eugenewijaya)
-- **Report a bug or suggest a feature**: [Open an Issue](https://github.com/Eugenewijaya/spinyin-lyric/issues)
+- **Star the repository** on GitHub to help more listeners find it: [Eugenewijaya/spinyin-lyric](https://github.com/Eugenewijaya/spinyin-lyric)
+- **Sponsor on GitHub**: [github.com/sponsors/Eugenewijaya](https://github.com/sponsors/Eugenewijaya)
+- **Report bugs or request features**: [Open an Issue](https://github.com/Eugenewijaya/spinyin-lyric/issues)
 - **Contribute**: Pull requests are always welcome.
 
 <div align="center">
-<sub>Built with care by <a href="https://github.com/Eugenewijaya">@Eugenewijaya</a> · Powered by <a href="https://github.com/zh-lx/pinyin-pro">pinyin-pro</a> · Released under the <a href="LICENSE">MIT License</a></sub>
+<sub>Built by <a href="https://github.com/Eugenewijaya">@Eugenewijaya</a> · Offline engine by <a href="https://github.com/zh-lx/pinyin-pro">pinyin-pro</a> · Released under the <a href="LICENSE">MIT License</a></sub>
 </div>

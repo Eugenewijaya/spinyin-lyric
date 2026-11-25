@@ -1,7 +1,7 @@
 [
   {
     "name": "Spinyin-lyric for Spotify",
-    "description": "Real-time offline Mandarin (Hanzi) to Pinyin smart lyrics for Spotify Native Lyrics, Liquid Lyrics, Beautiful Lyrics, Spicy Lyrics, and Lyrics Plus.",
+    "description": "Standalone Liquid Glass lyrics stage and 100% offline Mandarin (Hanzi) to Pinyin smart lyrics for Spotify, with Dual & Pinyin-Only modes, 3 tone styles, click-to-seek, and Spinyin Studio.",
     "preview": "preview.svg",
     "main": "spinyin-lyric.js",
     "readme": "README.md",
@@ -17,7 +17,7 @@
       "pinyin",
       "mandarin",
       "chinese",
-      "translate",
+      "liquid-glass",
       "romanization"
     ]
   }
