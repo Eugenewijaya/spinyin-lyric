@@ -1268,12 +1268,209 @@
       }
     }
 
+    /* -----------------------------------------
+     * Spotify-Style Chinese Ornaments Backdrop
+     * ----------------------------------------- */
+    .cn-ornament-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .cn-lattice-corner {
+      position: absolute;
+      width: clamp(190px, 24vw, 340px);
+      height: clamp(190px, 24vw, 340px);
+      opacity: 0.14;
+      color: #1ed760;
+      will-change: transform;
+      transition: transform 0.25s ease-out;
+    }
+
+    .cn-lattice-corner--tl {
+      top: 56px;
+      left: -18px;
+    }
+
+    .cn-lattice-corner--br {
+      bottom: -24px;
+      right: -18px;
+      transform: rotate(180deg);
+      color: rgba(244, 184, 206, 0.85);
+      opacity: 0.11;
+    }
+
+    .cn-cloud {
+      position: absolute;
+      opacity: 0.085;
+      color: #1ed760;
+      will-change: transform;
+      filter: drop-shadow(0 0 18px rgba(30, 215, 96, 0.16));
+    }
+
+    .cn-cloud--1 {
+      top: 22%;
+      right: 4%;
+      width: clamp(180px, 20vw, 290px);
+      animation: cnFloatA 18s ease-in-out infinite;
+    }
+
+    .cn-cloud--2 {
+      bottom: 24%;
+      left: 3%;
+      width: clamp(160px, 18vw, 260px);
+      color: rgba(255, 255, 255, 0.72);
+      opacity: 0.065;
+      animation: cnFloatB 22s ease-in-out infinite;
+    }
+
+    .cn-seal-watermark {
+      position: absolute;
+      top: 52%;
+      right: clamp(18px, 4vw, 60px);
+      width: 112px;
+      height: 112px;
+      opacity: 0.07;
+      color: #1ed760;
+      will-change: transform;
+    }
+
+    @keyframes cnFloatA {
+      0%, 100% { transform: translate3d(0, 0, 0); }
+      50% { transform: translate3d(-14px, 10px, 0); }
+    }
+
+    @keyframes cnFloatB {
+      0%, 100% { transform: translate3d(0, 0, 0); }
+      50% { transform: translate3d(12px, -12px, 0); }
+    }
+
+    /* -----------------------------------------
+     * Scroll Reveal Animations
+     * ----------------------------------------- */
+    .scroll-reveal {
+      opacity: 0;
+      transform: translate3d(0, 28px, 0) scale(0.985);
+      transition:
+        opacity 0.68s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.72s cubic-bezier(0.22, 1, 0.36, 1);
+      transition-delay: var(--reveal-delay, 0ms);
+      will-change: opacity, transform;
+    }
+
+    .scroll-reveal.is-revealed {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+
+    /* -----------------------------------------
+     * Musical & Mandarin Swarm Cursor Layer
+     * ----------------------------------------- */
+    .swarm-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .swarm-mote {
+      position: fixed;
+      left: 0;
+      top: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      will-change: transform, opacity;
+      filter: drop-shadow(0 0 8px rgba(30, 215, 96, 0.35));
+      animation: swarmDrift var(--dur, 1050ms) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .swarm-mote--hanzi {
+      font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-weight: 700;
+      font-size: 13px;
+      line-height: 1;
+      padding: 3px 5px;
+      border-radius: 6px;
+      border: 1px solid rgba(30, 215, 96, 0.35);
+      background: rgba(16, 20, 18, 0.55);
+      color: #1ed760;
+    }
+
+    @keyframes swarmDrift {
+      0% {
+        opacity: 0;
+        transform: translate3d(var(--x0), var(--y0), 0) scale(0.55) rotate(var(--r0));
+      }
+      18% {
+        opacity: var(--peak, 0.88);
+        transform: translate3d(var(--x1), var(--y1), 0) scale(1.06) rotate(var(--r1));
+      }
+      100% {
+        opacity: 0;
+        transform: translate3d(var(--x2), var(--y2), 0) scale(0.72) rotate(var(--r2));
+      }
+    }
+
+    /* -----------------------------------------
+     * GitHub Star Pill Accent
+     * ----------------------------------------- */
+    .nav-pill--star {
+      border-color: rgba(250, 204, 21, 0.28);
+      background: rgba(250, 204, 21, 0.08);
+      color: #fde68a;
+    }
+
+    .nav-pill--star:hover {
+      border-color: rgba(250, 204, 21, 0.52);
+      background: rgba(250, 204, 21, 0.16);
+      color: #fef08a;
+    }
+
+    .nav-pill--star svg,
+    .star-icon {
+      color: #facc15;
+      transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .nav-pill--star:hover svg,
+    .btn-glass:hover .star-icon {
+      transform: scale(1.18) rotate(-10deg);
+    }
+
+    .star-count {
+      display: inline-flex;
+      align-items: center;
+      padding: 1px 6px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(250, 204, 21, 0.16);
+      color: #fef08a;
+    }
+
+    .star-count:empty {
+      display: none;
+    }
+
     @media (prefers-reduced-motion: reduce) {
       html {
         scroll-behavior: auto;
       }
-      .ambient-orb {
+      .ambient-orb,
+      .cn-cloud {
         animation: none;
+      }
+      .scroll-reveal {
+        opacity: 1 !important;
+        transform: none !important;
+      }
+      .swarm-layer {
+        display: none !important;
       }
       *, *::before, *::after {
         transition-duration: 0.01ms !important;
@@ -1286,7 +1483,43 @@
     <div class="ambient-orb ambient-orb--rose"></div>
     <div class="ambient-orb ambient-orb--emerald"></div>
   </div>
+  <!-- Subtle Spotify-styled Chinese Ornaments (Fretwork Lattice, Auspicious Clouds, Ink Seal) -->
+  <div class="cn-ornament-canvas" aria-hidden="true">
+    <!-- Top-Left Chinese Key-Fret Lattice (回纹窗格) -->
+    <svg class="cn-lattice-corner cn-lattice-corner--tl" data-parallax="0.06" viewBox="0 0 240 240" fill="none">
+      <path d="M16 16 H204 M16 16 V204 M36 36 H164 V64 H64 V164 H36 Z M64 64 H132 V92 H92 V132 H64 Z M92 92 H112 V112 H92 Z" stroke="currentColor" stroke-width="2" stroke-linecap="square"/>
+      <path d="M16 16 C86 16, 152 38, 214 68" stroke="currentColor" stroke-width="1.4" stroke-dasharray="4 6" opacity="0.65"/>
+      <circle cx="164" cy="36" r="3" fill="currentColor"/>
+      <circle cx="36" cy="164" r="3" fill="currentColor"/>
+    </svg>
+
+    <!-- Bottom-Right Chinese Key-Fret Lattice -->
+    <svg class="cn-lattice-corner cn-lattice-corner--br" data-parallax="-0.05" viewBox="0 0 240 240" fill="none">
+      <path d="M16 16 H204 M16 16 V204 M36 36 H164 V64 H64 V164 H36 Z M64 64 H132 V92 H92 V132 H64 Z M92 92 H112 V112 H92 Z" stroke="currentColor" stroke-width="2" stroke-linecap="square"/>
+      <circle cx="132" cy="64" r="3" fill="currentColor"/>
+      <circle cx="64" cy="132" r="3" fill="currentColor"/>
+    </svg>
+
+    <!-- Auspicious Cloud 1 (祥云) -->
+    <svg class="cn-cloud cn-cloud--1" data-parallax="0.12" viewBox="0 0 260 110" fill="none">
+      <path d="M18 76 H178 C202 76 218 62 218 46 C218 32 206 22 192 22 C180 22 172 30 172 39 C172 47 178 52 186 52 C192 52 196 48 196 43 M46 76 C46 52 68 34 94 34 C112 34 126 44 132 58 M98 34 C104 18 122 10 140 14 C156 18 166 32 164 48 M28 92 H148 C164 92 176 86 184 76" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+
+    <!-- Auspicious Cloud 2 (祥云) -->
+    <svg class="cn-cloud cn-cloud--2" data-parallax="-0.09" viewBox="0 0 260 110" fill="none">
+      <path d="M242 76 H82 C58 76 42 62 42 46 C42 32 54 22 68 22 C80 22 88 30 88 39 C88 47 82 52 74 52 C68 52 64 48 64 43 M214 76 C214 52 192 34 166 34 C148 34 134 44 128 58 M162 34 C156 18 138 10 120 14 C104 18 94 32 96 48 M232 92 H112 C96 92 84 86 76 76" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+
+    <!-- Minimal Circular Seal Watermark (拼音印章) -->
+    <svg class="cn-seal-watermark" data-parallax="0.16" viewBox="0 0 120 120" fill="none">
+      <circle cx="60" cy="60" r="52" stroke="currentColor" stroke-width="1.8" stroke-dasharray="6 4"/>
+      <circle cx="60" cy="60" r="42" stroke="currentColor" stroke-width="1.4"/>
+      <text x="60" y="54" text-anchor="middle" fill="currentColor" font-family="'Noto Sans SC','PingFang SC',sans-serif" font-size="22" font-weight="700">拼</text>
+      <text x="60" y="82" text-anchor="middle" fill="currentColor" font-family="'Noto Sans SC','PingFang SC',sans-serif" font-size="22" font-weight="700">音</text>
+    </svg>
+  </div>
   <div class="grain-overlay" aria-hidden="true"></div>
+  <div class="swarm-layer" id="swarm-layer" aria-hidden="true"></div>
 
   <!-- Minimal Liquid Glass Navbar -->
   <header class="navbar-wrap">
@@ -1304,6 +1537,19 @@
       </div>
 
       <div class="nav-actions">
+        <a
+          href="https://github.com/Eugenewijaya/spinyin-lyric"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="nav-pill nav-pill--star"
+          aria-label="Star Spinyin-lyric on GitHub"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 2.4l2.92 5.92 6.53.95-4.72 4.6 1.11 6.5L12 17.3l-5.84 3.07 1.11-6.5-4.72-4.6 6.53-.95L12 2.4z"/>
+          </svg>
+          <span class="hide-sm">Star</span>
+          <span class="star-count" data-star-count></span>
+        </a>
         <a
           href="https://github.com/Eugenewijaya/spinyin-lyric"
           target="_blank"
@@ -1360,12 +1606,16 @@
             <span>Try Live Stage</span>
           </a>
           <a
-            href="https://github.com/Eugenewijaya/spinyin-lyric/releases"
+            href="https://github.com/Eugenewijaya/spinyin-lyric"
             target="_blank"
             rel="noopener noreferrer"
             class="btn-glass"
           >
-            <span>Releases</span>
+            <svg class="star-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 2.4l2.92 5.92 6.53.95-4.72 4.6 1.11 6.5L12 17.3l-5.84 3.07 1.11-6.5-4.72-4.6 6.53-.95L12 2.4z"/>
+            </svg>
+            <span>Add Star</span>
+            <span class="star-count" data-star-count></span>
           </a>
         </div>
 
@@ -1643,7 +1893,11 @@
             rel="noopener noreferrer"
             class="btn-glass"
           >
+            <svg class="star-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 2.4l2.92 5.92 6.53.95-4.72 4.6 1.11 6.5L12 17.3l-5.84 3.07 1.11-6.5-4.72-4.6 6.53-.95L12 2.4z"/>
+            </svg>
             <span>Star on GitHub</span>
+            <span class="star-count" data-star-count></span>
           </a>
         </div>
       </div>
@@ -2099,6 +2353,256 @@
       renderTrack();
       syncPlayButton();
       resetAutoAdvance();
+
+      /* -----------------------------------------
+       * 3. Musical & Mandarin Swarm Cursor (6 Motifs)
+       * ----------------------------------------- */
+      const swarmLayer = document.getElementById("swarm-layer");
+      const SVG_NS = "http://www.w3.org/2000/svg";
+      const HANZI_SEALS = ["音", "歌", "拼", "韵"];
+      const SWARM_COLORS = ["#1ed760", "#5bf08f", "#f4b8ce", "#ffffff"];
+      const MAX_MOTES = 26;
+      let activeMotes = 0;
+
+      function createSvg(paths, size, strokeMode) {
+        const svg = document.createElementNS(SVG_NS, "svg");
+        svg.setAttribute("width", String(size));
+        svg.setAttribute("height", String(size));
+        svg.setAttribute("viewBox", "0 0 24 24");
+        svg.setAttribute("aria-hidden", "true");
+        if (strokeMode) {
+          svg.setAttribute("fill", "none");
+          svg.setAttribute("stroke", "currentColor");
+          svg.setAttribute("stroke-width", "2");
+          svg.setAttribute("stroke-linecap", "round");
+          svg.setAttribute("stroke-linejoin", "round");
+        } else {
+          svg.setAttribute("fill", "currentColor");
+        }
+        paths.forEach(function (spec) {
+          const el = document.createElementNS(SVG_NS, spec[0]);
+          const attrs = spec[1];
+          Object.keys(attrs).forEach(function (k) {
+            el.setAttribute(k, attrs[k]);
+          });
+          svg.appendChild(el);
+        });
+        return svg;
+      }
+
+      // 6 distinct musical & Mandarin motifs:
+      // 0: Eighth note, 1: Double beamed note, 2: Studio microphone,
+      // 3: Headphones, 4: Soundwave arcs, 5: Pinyin tone wave / Hanzi seal
+      const SWARM_MOTIFS = [
+        // 1. Eighth Note
+        function (size) {
+          return createSvg([
+            ["path", { d: "M9 18V5l10-2v4" }],
+            ["circle", { cx: "6.5", cy: "18", r: "2.8" }]
+          ], size, true);
+        },
+        // 2. Double Beamed Note
+        function (size) {
+          return createSvg([
+            ["path", { d: "M9 18V5l12-2v13" }],
+            ["circle", { cx: "6", cy: "18", r: "2.6" }],
+            ["circle", { cx: "18", cy: "16", r: "2.6" }]
+          ], size, true);
+        },
+        // 3. Studio Microphone
+        function (size) {
+          return createSvg([
+            ["rect", { x: "9", y: "3", width: "6", height: "11", rx: "3" }],
+            ["path", { d: "M5 11a7 7 0 0 0 14 0" }],
+            ["line", { x1: "12", y1: "18", x2: "12", y2: "21" }],
+            ["line", { x1: "8.5", y1: "21", x2: "15.5", y2: "21" }]
+          ], size, true);
+        },
+        // 4. Headphones
+        function (size) {
+          return createSvg([
+            ["path", { d: "M4 14v-2a8 8 0 0 1 16 0v2" }],
+            ["rect", { x: "3", y: "13", width: "4", height: "7", rx: "2" }],
+            ["rect", { x: "17", y: "13", width: "4", height: "7", rx: "2" }]
+          ], size, true);
+        },
+        // 5. Spotify-style Soundwave + Pinyin 3rd-Tone Arc
+        function (size) {
+          return createSvg([
+            ["path", { d: "M4 9.2c4.8-2.2 11.2-2.2 16 0" }],
+            ["path", { d: "M6 13.8c3.8-1.6 8.2-1.6 12 0" }],
+            ["path", { d: "M8.8 18c2.2-.8 4.2-.8 6.4 0" }]
+          ], size, true);
+        },
+        // 6. Mandarin Calligraphic Mini-Seal (音 / 歌 / 拼 / 韵)
+        function () {
+          const span = document.createElement("span");
+          span.className = "swarm-mote--hanzi";
+          span.textContent = HANZI_SEALS[Math.floor(Math.random() * HANZI_SEALS.length)];
+          return span;
+        }
+      ];
+
+      let motifCursor = 0;
+
+      function spawnSwarmMote(x, y, spread) {
+        if (!swarmLayer || prefersReducedMotion || activeMotes >= MAX_MOTES) return;
+        const mote = document.createElement("div");
+        mote.className = "swarm-mote";
+
+        const size = 15 + Math.round(Math.random() * 7);
+        const motifFn = SWARM_MOTIFS[motifCursor % SWARM_MOTIFS.length];
+        motifCursor += 1;
+
+        const color = SWARM_COLORS[Math.floor(Math.random() * SWARM_COLORS.length)];
+        mote.style.color = color;
+
+        const dx1 = (Math.random() - 0.5) * (spread || 26);
+        const dy1 = -(12 + Math.random() * 18);
+        const dx2 = dx1 + (Math.random() - 0.5) * 44;
+        const dy2 = dy1 - (26 + Math.random() * 36);
+        const r0 = Math.round((Math.random() - 0.5) * 26);
+        const r1 = Math.round(r0 + (Math.random() - 0.5) * 24);
+        const r2 = Math.round(r1 + (Math.random() - 0.5) * 32);
+        const dur = 880 + Math.round(Math.random() * 420);
+
+        mote.style.setProperty("--x0", Math.round(x - size / 2) + "px");
+        mote.style.setProperty("--y0", Math.round(y - size / 2) + "px");
+        mote.style.setProperty("--x1", Math.round(x - size / 2 + dx1) + "px");
+        mote.style.setProperty("--y1", Math.round(y - size / 2 + dy1) + "px");
+        mote.style.setProperty("--x2", Math.round(x - size / 2 + dx2) + "px");
+        mote.style.setProperty("--y2", Math.round(y - size / 2 + dy2) + "px");
+        mote.style.setProperty("--r0", r0 + "deg");
+        mote.style.setProperty("--r1", r1 + "deg");
+        mote.style.setProperty("--r2", r2 + "deg");
+        mote.style.setProperty("--dur", dur + "ms");
+        mote.style.setProperty("--peak", (0.62 + Math.random() * 0.28).toFixed(2));
+
+        mote.appendChild(motifFn(size));
+        swarmLayer.appendChild(mote);
+        activeMotes += 1;
+
+        window.setTimeout(function () {
+          mote.remove();
+          activeMotes = Math.max(0, activeMotes - 1);
+        }, dur + 40);
+      }
+
+      if (!prefersReducedMotion) {
+        let lastX = -999;
+        let lastY = -999;
+        let lastMoveTime = 0;
+
+        window.addEventListener("pointermove", function (e) {
+          if (e.pointerType === "touch") return;
+          const now = Date.now();
+          const dist = Math.hypot(e.clientX - lastX, e.clientY - lastY);
+          if (now - lastMoveTime < 58 || dist < 30) return;
+          lastX = e.clientX;
+          lastY = e.clientY;
+          lastMoveTime = now;
+          spawnSwarmMote(e.clientX, e.clientY, 24);
+        }, { passive: true });
+
+        window.addEventListener("pointerdown", function (e) {
+          if (e.pointerType === "touch") return;
+          for (let i = 0; i < 3; i++) {
+            spawnSwarmMote(e.clientX, e.clientY, 42);
+          }
+        }, { passive: true });
+
+        // Gentle musical motes while scrolling
+        let lastScrollBurst = 0;
+        window.addEventListener("scroll", function () {
+          const now = Date.now();
+          if (now - lastScrollBurst < 190) return;
+          lastScrollBurst = now;
+          const edgeX = Math.random() > 0.5
+            ? 24 + Math.random() * Math.min(110, window.innerWidth * 0.14)
+            : window.innerWidth - 24 - Math.random() * Math.min(110, window.innerWidth * 0.14);
+          const midY = 120 + Math.random() * Math.max(120, window.innerHeight - 240);
+          spawnSwarmMote(edgeX, midY, 28);
+        }, { passive: true });
+      }
+
+      /* -----------------------------------------
+       * 4. Scroll-Reveal Stagger & Chinese Ornament Parallax
+       * ----------------------------------------- */
+      const revealTargets = document.querySelectorAll(
+        ".installer-card, .section-head, .stage-shell, .feature-card, .support-banner"
+      );
+
+      revealTargets.forEach(function (el) {
+        el.classList.add("scroll-reveal");
+        if (el.classList.contains("feature-card")) {
+          const siblings = Array.prototype.slice.call(el.parentElement ? el.parentElement.children : []);
+          const idx = siblings.indexOf(el);
+          el.style.setProperty("--reveal-delay", Math.max(0, idx) * 85 + "ms");
+        }
+      });
+
+      if (!prefersReducedMotion && "IntersectionObserver" in window) {
+        const revealObserver = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            const target = entry.target;
+            target.classList.add("is-revealed");
+            revealObserver.unobserve(target);
+
+            // Subtle celebratory swarm burst on section reveal
+            const rect = target.getBoundingClientRect();
+            if (rect.width > 0 && rect.top > 40 && rect.top < window.innerHeight) {
+              const cx = Math.min(window.innerWidth - 40, Math.max(40, rect.left + rect.width * 0.5));
+              const cy = Math.min(window.innerHeight - 40, Math.max(60, rect.top + 36));
+              spawnSwarmMote(cx - 28, cy, 32);
+              spawnSwarmMote(cx + 28, cy, 32);
+            }
+          });
+        }, { threshold: 0.12, rootMargin: "0px 0px -36px 0px" });
+
+        revealTargets.forEach(function (el) { revealObserver.observe(el); });
+      } else {
+        revealTargets.forEach(function (el) { el.classList.add("is-revealed"); });
+      }
+
+      // Subtle parallax on Chinese ornaments while scrolling
+      const parallaxNodes = document.querySelectorAll("[data-parallax]");
+      if (!prefersReducedMotion && parallaxNodes.length > 0) {
+        let parallaxRaf = 0;
+        const updateParallax = function () {
+          parallaxRaf = 0;
+          const sy = window.scrollY || window.pageYOffset || 0;
+          parallaxNodes.forEach(function (node) {
+            const speed = parseFloat(node.getAttribute("data-parallax") || "0");
+            const offset = Math.round(sy * speed * -1);
+            const baseRot = node.classList.contains("cn-lattice-corner--br") ? " rotate(180deg)" : "";
+            node.style.transform = "translate3d(0, " + offset + "px, 0)" + baseRot;
+          });
+        };
+        window.addEventListener("scroll", function () {
+          if (!parallaxRaf) parallaxRaf = window.requestAnimationFrame(updateParallax);
+        }, { passive: true });
+      }
+
+      /* -----------------------------------------
+       * 5. Live GitHub Star Count (graceful fallback)
+       * ----------------------------------------- */
+      (function fetchGitHubStars() {
+        const badges = document.querySelectorAll("[data-star-count]");
+        if (!badges.length || typeof window.fetch !== "function") return;
+        window.fetch("https://api.github.com/repos/Eugenewijaya/spinyin-lyric", {
+          headers: { Accept: "application/vnd.github+json" }
+        })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (data) {
+            if (!data || typeof data.stargazers_count !== "number") return;
+            const label = data.stargazers_count >= 1000
+              ? (data.stargazers_count / 1000).toFixed(1).replace(/\.0$/, "") + "k"
+              : String(data.stargazers_count);
+            badges.forEach(function (b) { b.textContent = label; });
+          })
+          .catch(function () {});
+      })();
     })();
   </script>
 </body>
