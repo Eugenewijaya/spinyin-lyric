@@ -1,6 +1,6 @@
 // NAME: Spinyin-lyric for Spotify
 // AUTHOR: Eugenewijaya
-// VERSION: 1.0.0
+// VERSION: 1.1.0
 // DESCRIPTION: Real-time offline Mandarin (Hanzi) to Pinyin smart lyrics for Spotify, Liquid Lyrics, Beautiful Lyrics, Spicy Lyrics, and Lyrics Plus.
 // REPOSITORY: https://github.com/Eugenewijaya/spinyin-lyric
 
@@ -27,7 +27,7 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
   if (window.__spinyinLyricLoaded) return;
   window.__spinyinLyricLoaded = true;
 
-  const VERSION = "1.0.0";
+  const VERSION = "1.1.0";
   const REPO_URL = "https://github.com/Eugenewijaya/spinyin-lyric";
   const STORAGE_PREFIX = "spinyin:";
   const LEGACY_PREFIX = "mandarin-pinyin:";
@@ -86,6 +86,11 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     { id: "none", label: "Plain (ni hao)", short: "ni hao" },
   ];
 
+  const DISPLAY_MODES = [
+    { id: "dual", label: "Hanzi + Pinyin", short: "Hanzi+Py" },
+    { id: "pinyin-only", label: "Pinyin Only (Main)", short: "Pinyin Only" },
+  ];
+
   // --- Safe LocalStorage with automatic legacy migration ---
   function storageGet(key) {
     try {
@@ -119,10 +124,14 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     translateLyrics: readBool("lyrics", true),
     translateTitles: readBool("titles", true),
     toneType: storageGet("toneType") || "symbol",
+    displayMode: storageGet("displayMode") || "dual",
   };
 
   if (!TONE_OPTIONS.some((t) => t.id === state.toneType)) {
     state.toneType = "symbol";
+  }
+  if (!DISPLAY_MODES.some((m) => m.id === state.displayMode)) {
+    state.displayMode = "dual";
   }
 
   function saveState() {
@@ -130,6 +139,7 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     storageSet("lyrics", state.translateLyrics ? "1" : "0");
     storageSet("titles", state.translateTitles ? "1" : "0");
     storageSet("toneType", state.toneType);
+    storageSet("displayMode", state.displayMode);
   }
 
   // --- Offline Pinyin Engine (uses bundled window.pinyinPro) ---
@@ -213,7 +223,7 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
         }
       }
 
-      /* Universal Smart Running Lyrics Pinyin */
+      /* Universal Smart Running Lyrics Pinyin (Dual Mode: Hanzi + Pinyin) */
       html.spinyin-enabled.spinyin-lyrics [data-spinyin-kind="lyric"][data-spinyin]::after {
         content: attr(data-spinyin);
         display: block;
@@ -224,21 +234,117 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
         line-height: 1.38;
         letter-spacing: 0.025em;
         margin-top: 0.14em;
-        opacity: 0.84;
+        opacity: 0.86;
         font-family: var(--encore-body-font-stack, "CircularSp", system-ui, -apple-system, sans-serif);
+        -webkit-font-smoothing: antialiased;
+        text-rendering: geometricPrecision;
         pointer-events: none;
         animation: spinyinFadeUp 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
-        transition: opacity 0.22s ease, text-shadow 0.25s ease, transform 0.22s ease;
+        transition: opacity 0.22s ease, color 0.22s ease;
       }
 
-      /* Active running lyric highlight across all lyrics engines */
+      /* Prevent Liquid Lyrics transparent gradient-fill & blur/glow from washing out Pinyin */
+      html.spinyin-enabled.spinyin-lyrics .liquid-lyrics-line[data-spinyin]::after {
+        color: rgba(255, 255, 255, 0.84);
+        -webkit-text-fill-color: rgba(255, 255, 255, 0.84);
+        background: none !important;
+        -webkit-background-clip: border-box !important;
+        background-clip: border-box !important;
+        filter: none !important;
+      }
+
+      html.spinyin-enabled.spinyin-lyrics .liquid-lyrics-line.active.ll-glow[data-spinyin] {
+        filter: none !important;
+      }
+
+      html.spinyin-enabled.spinyin-lyrics .liquid-lyrics-line.active[data-spinyin]::after {
+        color: #ffffff;
+        -webkit-text-fill-color: #ffffff;
+        opacity: 1;
+        text-shadow: 0 1px 10px rgba(0, 0, 0, 0.24);
+      }
+
+      /* Active running lyric highlight across all other lyrics engines */
       html.spinyin-enabled.spinyin-lyrics .SOT5gG00YqnGQ4uR7PwQ [data-spinyin-kind="lyric"][data-spinyin]::after,
       html.spinyin-enabled.spinyin-lyrics .lyrics-lyricsContent-active [data-spinyin-kind="lyric"][data-spinyin]::after,
       html.spinyin-enabled.spinyin-lyrics .Vocals.Active[data-spinyin-kind="lyric"][data-spinyin]::after,
-      html.spinyin-enabled.spinyin-lyrics .liquid-lyrics-line.active[data-spinyin-kind="lyric"][data-spinyin]::after,
       html.spinyin-enabled.spinyin-lyrics .spicy-lyrics-line.active[data-spinyin-kind="lyric"][data-spinyin]::after {
         opacity: 0.98;
-        text-shadow: 0 0 14px rgba(255, 255, 255, 0.22);
+      }
+
+      /* === PINYIN ONLY MODE (Hide Hanzi, Pinyin becomes the crisp primary lyric) === */
+      /* 1. Child-wrapped engines: Liquid Lyrics, Beautiful Lyrics, Spicy Lyrics */
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only .liquid-lyrics-line[data-spinyin] > *:not(.ll-interlude-dot),
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only .Lyrics .Vocals.Lead[data-spinyin] > *,
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only .Lyrics .Vocals.Background[data-spinyin] > *,
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only .spicy-lyrics-line[data-spinyin] > *,
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only .SpicyLyricsPage .line[data-spinyin] > * {
+        display: none !important;
+      }
+
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only .liquid-lyrics-line[data-spinyin],
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only .liquid-lyrics-line.active[data-spinyin] {
+        background: none !important;
+        -webkit-background-clip: border-box !important;
+        background-clip: border-box !important;
+        filter: none !important;
+      }
+
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only .liquid-lyrics-line.active[data-spinyin] {
+        transform: translate3d(0, -1px, 0) scale(1.02) !important;
+      }
+
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only .liquid-lyrics-line[data-spinyin]::after,
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only .Lyrics .Vocals.Lead[data-spinyin]::after,
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only .Lyrics .Vocals.Background[data-spinyin]::after,
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only .spicy-lyrics-line[data-spinyin]::after,
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only .SpicyLyricsPage .line[data-spinyin]::after {
+        font-size: 0.92em !important;
+        font-weight: inherit !important;
+        line-height: 1.26 !important;
+        letter-spacing: 0.015em !important;
+        margin-top: 0 !important;
+        opacity: 1 !important;
+        animation: none !important;
+      }
+
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only .liquid-lyrics-line.future[data-spinyin]::after {
+        color: rgba(255, 255, 255, 0.44);
+        -webkit-text-fill-color: rgba(255, 255, 255, 0.44);
+      }
+
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only .liquid-lyrics-line.past[data-spinyin]::after {
+        color: rgba(255, 255, 255, 0.72);
+        -webkit-text-fill-color: rgba(255, 255, 255, 0.72);
+      }
+
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only .liquid-lyrics-line.active[data-spinyin]::after {
+        color: #ffffff;
+        -webkit-text-fill-color: #ffffff;
+        text-shadow: 0 2px 14px rgba(0, 0, 0, 0.28);
+      }
+
+      /* 2. Bare-text engines: Spotify Native Lyrics, Lyrics Plus, Track Page */
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only .lyrics-lyricsContent-text[data-spinyin],
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only .lyrics-lyricsContent-lyric[data-spinyin],
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only [data-testid="fullscreen-lyric"][data-spinyin],
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only [data-testid="lyrics-line-always-visible"][data-spinyin],
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only #expandable-lyrics-container p[data-spinyin] {
+        font-size: 0 !important;
+        line-height: 0 !important;
+      }
+
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only .lyrics-lyricsContent-text[data-spinyin]::after,
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only .lyrics-lyricsContent-lyric[data-spinyin]::after,
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only [data-testid="fullscreen-lyric"][data-spinyin]::after,
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only [data-testid="lyrics-line-always-visible"][data-spinyin]::after,
+      html.spinyin-enabled.spinyin-lyrics.spinyin-only #expandable-lyrics-container p[data-spinyin]::after {
+        font-size: var(--spinyin-fs, clamp(22px, 2.2vw, 34px)) !important;
+        line-height: 1.32 !important;
+        font-weight: 700 !important;
+        margin-top: 0 !important;
+        opacity: 1 !important;
+        animation: none !important;
       }
 
       /* Block Titles (Entity headers, Liquid Lyrics left card, Right Now Playing title) */
@@ -607,12 +713,14 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     root.classList.toggle("spinyin-enabled", state.enabled);
     root.classList.toggle("spinyin-lyrics", state.translateLyrics);
     root.classList.toggle("spinyin-titles", state.translateTitles);
+    root.classList.toggle("spinyin-only", state.displayMode === "pinyin-only");
   }
 
   // --- Floating Smart Lyrics Pill ---
   let pillRoot = null;
   let pillToggleBtn = null;
   let pillToggleText = null;
+  let pillModeBtn = null;
   let pillToneBtn = null;
 
   function ensureFloatingPill() {
@@ -629,6 +737,14 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     pillToggleBtn.append(dot, pillToggleText);
     pillToggleBtn.addEventListener("click", () => setEnabled(!state.enabled));
 
+    pillModeBtn = document.createElement("button");
+    pillModeBtn.type = "button";
+    pillModeBtn.className = "spinyin-pill-chip";
+    pillModeBtn.title = "Switch between Hanzi + Pinyin and Pinyin Only";
+    pillModeBtn.addEventListener("click", () => {
+      setDisplayMode(state.displayMode === "pinyin-only" ? "dual" : "pinyin-only");
+    });
+
     pillToneBtn = document.createElement("button");
     pillToneBtn.type = "button";
     pillToneBtn.className = "spinyin-pill-chip";
@@ -639,7 +755,7 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
       setToneType(next.id);
     });
 
-    pillRoot.append(pillToggleBtn, pillToneBtn);
+    pillRoot.append(pillToggleBtn, pillModeBtn, pillToneBtn);
     document.body.appendChild(pillRoot);
     syncFloatingPill();
   }
@@ -649,6 +765,9 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     const isOn = state.enabled && state.translateLyrics;
     pillToggleBtn.classList.toggle("is-on", isOn);
     pillToggleText.textContent = isOn ? "拼 Spinyin ON" : "拼 Spinyin OFF";
+    const modeOpt = DISPLAY_MODES.find((m) => m.id === state.displayMode) || DISPLAY_MODES[0];
+    pillModeBtn.textContent = modeOpt.short;
+    pillModeBtn.classList.toggle("is-on", isOn && state.displayMode === "pinyin-only");
     const opt = TONE_OPTIONS.find((t) => t.id === state.toneType) || TONE_OPTIONS[0];
     pillToneBtn.textContent = opt.short;
   }
@@ -688,6 +807,22 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
 
     const pinyin = convertToPinyin(text, state.toneType);
     if (pinyin && pinyin !== text) {
+      // Preserve native computed font size for bare-text lyrics before Pinyin-Only mode hides base text
+      if (kind === "lyric" && !el.style.getPropertyValue?.("--spinyin-fs")) {
+        try {
+          const ownFs = window.getComputedStyle?.(el)?.fontSize;
+          const ownPx = parseFloat(ownFs);
+          if (ownPx && ownPx >= 10) {
+            el.style.setProperty("--spinyin-fs", ownFs);
+          } else if (el.parentElement) {
+            const parentFs = window.getComputedStyle?.(el.parentElement)?.fontSize;
+            const parentPx = parseFloat(parentFs);
+            if (parentPx && parentPx >= 10) {
+              el.style.setProperty("--spinyin-fs", parentFs);
+            }
+          }
+        } catch {}
+      }
       el.setAttribute("data-spinyin", pinyin);
       el.setAttribute("data-spinyin-kind", kind);
     } else {
@@ -787,6 +922,7 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
   let menuToggleEnabled = null;
   let menuToggleLyrics = null;
   let menuToggleTitles = null;
+  const menuModeItems = new Map();
   const menuToneItems = new Map();
 
   function notify(msg, isError = false) {
@@ -800,6 +936,9 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     if (menuToggleEnabled) menuToggleEnabled.setState(state.enabled);
     if (menuToggleLyrics) menuToggleLyrics.setState(state.translateLyrics);
     if (menuToggleTitles) menuToggleTitles.setState(state.translateTitles);
+    for (const [modeId, item] of menuModeItems.entries()) {
+      item.setState(state.displayMode === modeId);
+    }
     for (const [toneId, item] of menuToneItems.entries()) {
       item.setState(state.toneType === toneId);
     }
@@ -812,6 +951,15 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     syncMenuAndButtonState();
     refreshAllAnnotations();
     notify(state.enabled ? "Spinyin-lyric: ON" : "Spinyin-lyric: OFF");
+  }
+
+  function setDisplayMode(modeId) {
+    if (!DISPLAY_MODES.some((m) => m.id === modeId)) return;
+    state.displayMode = modeId;
+    saveState();
+    syncHtmlClasses();
+    syncMenuAndButtonState();
+    notify(modeId === "pinyin-only" ? "Lyrics Mode: Pinyin Only (Main)" : "Lyrics Mode: Hanzi + Pinyin");
   }
 
   function setToneType(toneId) {
@@ -970,6 +1118,27 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
     );
     toggleGrid.append(tAuto.btn, tLyrics.btn, tTitles.btn);
 
+    const modeLabel = document.createElement("span");
+    modeLabel.className = "spinyin-label";
+    modeLabel.textContent = "Lyrics Display Mode";
+    const modeRow = document.createElement("div");
+    modeRow.className = "spinyin-pill-row";
+    const modeButtons = [];
+
+    DISPLAY_MODES.forEach((opt) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "spinyin-tone-pill";
+      btn.textContent = opt.label;
+      btn.classList.toggle("is-active", state.displayMode === opt.id);
+      btn.addEventListener("click", () => {
+        setDisplayMode(opt.id);
+        modeButtons.forEach(({ el, id }) => el.classList.toggle("is-active", id === state.displayMode));
+      });
+      modeButtons.push({ el: btn, id: opt.id });
+      modeRow.appendChild(btn);
+    });
+
     const toneLabel = document.createElement("span");
     toneLabel.className = "spinyin-label";
     toneLabel.textContent = "Pinyin Tone Style";
@@ -1053,7 +1222,7 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
       pillRow.appendChild(pill);
     });
 
-    settingsCard.append(settingsLabel, toggleGrid, toneLabel, pillRow);
+    settingsCard.append(settingsLabel, toggleGrid, modeLabel, modeRow, toneLabel, pillRow);
     textarea.addEventListener("input", updateTranslatorDisplay);
 
     useNowBtn.addEventListener("click", () => {
@@ -1147,6 +1316,14 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
         refreshAllAnnotations();
       });
 
+      const modeSubItems = DISPLAY_MODES.map((opt) => {
+        const item = new window.Spicetify.Menu.Item(`Mode: ${opt.label}`, state.displayMode === opt.id, () => {
+          setDisplayMode(opt.id);
+        });
+        menuModeItems.set(opt.id, item);
+        return item;
+      });
+
       const toneSubItems = TONE_OPTIONS.map((opt) => {
         const item = new window.Spicetify.Menu.Item(`Tone: ${opt.label}`, state.toneType === opt.id, () => {
           setToneType(opt.id);
@@ -1163,6 +1340,7 @@ if (typeof window !== "undefined" && !window.pinyinPro) {
         menuToggleEnabled,
         menuToggleLyrics,
         menuToggleTitles,
+        ...modeSubItems,
         ...toneSubItems,
         openModalItem,
       ]).register();

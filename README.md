@@ -4,7 +4,7 @@
 
 **Real-time offline Mandarin (Hanzi) to Pinyin smart lyrics for Spotify.**
 
-[![Version](https://img.shields.io/badge/version-v1.0.0-1ed760?style=flat-square)](https://github.com/Eugenewijaya/spinyin-lyric/releases)
+[![Version](https://img.shields.io/badge/version-v1.1.0-1ed760?style=flat-square)](https://github.com/Eugenewijaya/spinyin-lyric/releases)
 [![Spicetify](https://img.shields.io/badge/Spicetify-Marketplace%20Ready-1db954?style=flat-square&logo=spotify&logoColor=white)](https://spicetify.app)
 [![Offline](https://img.shields.io/badge/engine-100%25%20offline-22262e?style=flat-square)](#features)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
@@ -47,7 +47,8 @@ EXT_DIR="$(dirname "$(spicetify -c)")/Extensions" && mkdir -p "$EXT_DIR" && curl
 - **100% offline engine** — bundles `pinyin-pro` locally inside `spinyin-lyric.js` for `0ms` conversion with zero external API calls, zero rate limits, and full CSP safety.
 - **Accurate Mandarin handling** — supports Simplified (`简体`), Traditional (`繁體`), context-aware polyphones (`音乐` → `yīn yuè`, `银行` → `yín háng`), tone sandhi, and mixed Chinese/English lines.
 - **Works across lyrics extensions** — automatically connects to Spotify's native lyrics as well as popular Spicetify lyrics extensions without breaking React rendering or karaoke animations.
-- **On-screen floating pill** — subtle glass control pill (`拼 Spinyin ON · nǐ hǎo`) appears only while Chinese lyrics are visible, letting you toggle ON/OFF or cycle tone formats in one click.
+- **Dual or Pinyin-Only display mode** — choose between **Hanzi + Pinyin** or **Pinyin Only** (hides Hanzi so crisp, unblurred Pinyin becomes the primary running lyric — especially sharp in Liquid Lyrics).
+- **On-screen floating pill** — subtle glass control pill (`拼 Spinyin ON · Hanzi+Py / Pinyin Only · nǐ hǎo`) appears only while Chinese lyrics are visible, letting you toggle ON/OFF, switch display mode, or cycle tone formats in one click.
 - **Spinyin Studio modal** — click the `拼` icon on the Spotify playbar (or **Profile Menu → Spinyin-lyric**) to configure scopes, inspect the current track, or paste any Mandarin text for ruby-annotated Pinyin and one-click copy.
 - **Lightweight & motion-aware** — bounded memory cache, debounced DOM observer, pauses idle sweeps when hidden, and respects `prefers-reduced-motion`.
 
@@ -93,6 +94,11 @@ $env:SPINYIN_UNINSTALL="1"; iwr -useb https://raw.githubusercontent.com/Eugenewi
 ## Versioning & Changelog
 
 This project follows [Semantic Versioning](https://semver.org/).
+
+### `v1.1.0`
+- Added **Pinyin Only (Main Lyric)** mode to hide Hanzi and display Pinyin as the primary full-size running lyric.
+- Fixed Pinyin blur / gradient washout in **Liquid Lyrics** during active melody progression by overriding transparent text-fill and heavy glow filters.
+- Added 1-click display mode toggle (`Hanzi+Py` ↔ `Pinyin Only`) directly in the floating smart lyrics pill, Spinyin Studio modal, and Profile menu.
 
 ### `v1.0.0` (Initial Open-Source Release)
 - Bundled offline `pinyin-pro@3.28.1` engine with UMD isolation.
