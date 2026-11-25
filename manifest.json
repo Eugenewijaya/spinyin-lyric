@@ -1,0 +1,24 @@
+[
+  {
+    "name": "Spinyin-lyric for Spotify",
+    "description": "Real-time offline Mandarin (Hanzi) to Pinyin smart lyrics for Spotify Native Lyrics, Liquid Lyrics, Beautiful Lyrics, Spicy Lyrics, and Lyrics Plus.",
+    "preview": "preview.svg",
+    "main": "spinyin-lyric.js",
+    "readme": "README.md",
+    "branch": "main",
+    "authors": [
+      {
+        "name": "Eugenewijaya",
+        "url": "https://github.com/Eugenewijaya"
+      }
+    ],
+    "tags": [
+      "lyrics",
+      "pinyin",
+      "mandarin",
+      "chinese",
+      "translate",
+      "romanization"
+    ]
+  }
+]

@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" role="img" aria-label="Spinyin-lyric for Spotify live Pinyin lyrics preview">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#141118"/>
+      <stop offset="48%" stop-color="#2c1d27"/>
+      <stop offset="100%" stop-color="#19131c"/>
+    </linearGradient>
+    <radialGradient id="glowRose" cx="68%" cy="38%" r="55%">
+      <stop offset="0%" stop-color="#d88aa4" stop-opacity="0.28"/>
+      <stop offset="60%" stop-color="#8b4d68" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#141118" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowMint" cx="20%" cy="85%" r="45%">
+      <stop offset="0%" stop-color="#1ed760" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#141118" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="coverGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f7cad9"/>
+      <stop offset="55%" stop-color="#e39bb5"/>
+      <stop offset="100%" stop-color="#b96d8c"/>
+    </linearGradient>
+    <linearGradient id="glassCard" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.11"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.04"/>
+    </linearGradient>
+    <filter id="softShadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="14" stdDeviation="20" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+    <clipPath id="coverClip">
+      <rect x="88" y="138" width="236" height="236" rx="16"/>
+    </clipPath>
+    <style>
+      .sans { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; }
+      .line1 { animation: active1 9s ease-in-out infinite; }
+      .line2 { animation: active2 9s ease-in-out infinite; }
+      .line3 { animation: active3 9s ease-in-out infinite; }
+      .progressBar { animation: progressMove 9s linear infinite; transform-origin: 96px 408px; }
+      .dotPulse { animation: dotGlow 2.4s ease-in-out infinite; }
+
+      @keyframes active1 {
+        0%, 28% { opacity: 1; }
+        34%, 94% { opacity: 0.34; }
+        100% { opacity: 1; }
+      }
+      @keyframes active2 {
+        0%, 28% { opacity: 0.34; }
+        34%, 62% { opacity: 1; }
+        68%, 100% { opacity: 0.34; }
+      }
+      @keyframes active3 {
+        0%, 62% { opacity: 0.34; }
+        68%, 94% { opacity: 1; }
+        100% { opacity: 0.34; }
+      }
+      @keyframes progressMove {
+        0% { transform: scaleX(0.24); }
+        100% { transform: scaleX(0.78); }
+      }
+      @keyframes dotGlow {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.45; }
+      }
+    </style>
+  </defs>
+
+  <!-- Canvas Background -->
+  <rect width="1200" height="630" rx="24" fill="url(#bgGrad)"/>
+  <rect width="1200" height="630" rx="24" fill="url(#glowRose)"/>
+  <rect width="1200" height="630" rx="24" fill="url(#glowMint)"/>
+
+  <!-- Main Glass App Frame -->
+  <rect x="34" y="34" width="1132" height="562" rx="20" fill="rgba(255,255,255,0.045)" stroke="rgba(255,255,255,0.12)" stroke-width="1.2" filter="url(#softShadow)"/>
+
+  <!-- Top Bar Brand -->
+  <circle cx="68" cy="70" r="6" fill="#ff5f56" opacity="0.8"/>
+  <circle cx="90" cy="70" r="6" fill="#ffbd2e" opacity="0.8"/>
+  <circle cx="112" cy="70" r="6" fill="#27c93f" opacity="0.8"/>
+  <text x="142" y="75" class="sans" fill="#ffffff" font-size="14" font-weight="700" letter-spacing="0.06em" opacity="0.9">SPINYIN-LYRIC FOR SPOTIFY</text>
+
+  <!-- Top Right Badge -->
+  <rect x="974" y="54" width="164" height="30" rx="15" fill="rgba(30,215,96,0.14)" stroke="rgba(30,215,96,0.35)" stroke-width="1"/>
+  <text x="1056" y="74" text-anchor="middle" class="sans" fill="#1ed760" font-size="12" font-weight="700" letter-spacing="0.03em">v1.0.0 · OFFLINE</text>
+
+  <!-- Left Now Playing Card -->
+  <rect x="68" y="116" width="276" height="436" rx="20" fill="url(#glassCard)" stroke="rgba(255,255,255,0.11)" stroke-width="1"/>
+
+  <!-- Album Cover Artwork -->
+  <g clip-path="url(#coverClip)">
+    <rect x="88" y="138" width="236" height="236" fill="url(#coverGrad)"/>
+    <circle cx="206" cy="256" r="88" fill="#ffffff" opacity="0.16"/>
+    <circle cx="206" cy="256" r="54" fill="#ffffff" opacity="0.18"/>
+    <path d="M128 262 C158 232, 184 248, 206 256 C228 264, 252 246, 284 252" fill="none" stroke="#532539" stroke-width="2.2" stroke-linecap="round" opacity="0.65"/>
+    <text x="206" y="216" text-anchor="middle" class="sans" fill="#532539" font-size="26" font-weight="700" opacity="0.85">恋爱频率</text>
+    <text x="206" y="298" text-anchor="middle" class="sans" fill="#532539" font-size="13" font-weight="600" letter-spacing="0.14em" opacity="0.7">LOVE FREQUENCY</text>
+  </g>
+
+  <!-- Progress Bar -->
+  <rect x="96" y="404" width="220" height="5" rx="2.5" fill="rgba(255,255,255,0.18)"/>
+  <rect x="96" y="404" width="220" height="5" rx="2.5" fill="#ffffff" class="progressBar"/>
+  <text x="96" y="426" class="sans" fill="rgba(255,255,255,0.55)" font-size="11" font-weight="600">1:24</text>
+  <text x="316" y="426" text-anchor="end" class="sans" fill="rgba(255,255,255,0.55)" font-size="11" font-weight="600">3:19</text>
+
+  <!-- Track Title + Auto Pinyin -->
+  <text x="206" y="466" text-anchor="middle" class="sans" fill="#ffffff" font-size="22" font-weight="700">恋爱频率</text>
+  <text x="206" y="492" text-anchor="middle" class="sans" fill="#1ed760" font-size="14" font-weight="600" letter-spacing="0.03em">liàn ài pín lǜ</text>
+  <text x="206" y="520" text-anchor="middle" class="sans" fill="rgba(255,255,255,0.62)" font-size="13" font-weight="500">Sasablue</text>
+
+  <!-- Right Running Smart Lyrics Panel -->
+  <g transform="translate(416, 152)">
+    <!-- Line 1 -->
+    <g class="line1">
+      <text x="0" y="50" class="sans" fill="#ffffff" font-size="40" font-weight="800" letter-spacing="0.02em">一遍一遍慢慢累积</text>
+      <text x="2" y="84" class="sans" fill="#f2dde6" font-size="22" font-weight="500" letter-spacing="0.03em">yí biàn yi biàn màn màn lěi jī</text>
+    </g>
+
+    <!-- Line 2 -->
+    <g class="line2" transform="translate(0, 128)">
+      <text x="0" y="50" class="sans" fill="#ffffff" font-size="40" font-weight="800" letter-spacing="0.02em">累积成永恒的记忆</text>
+      <text x="2" y="84" class="sans" fill="#f2dde6" font-size="22" font-weight="500" letter-spacing="0.03em">lěi jī chéng yǒng héng de jì yì</text>
+    </g>
+
+    <!-- Line 3 -->
+    <g class="line3" transform="translate(0, 256)">
+      <text x="0" y="50" class="sans" fill="#ffffff" font-size="40" font-weight="800" letter-spacing="0.02em">想够一万遍就在一起</text>
+      <text x="2" y="84" class="sans" fill="#f2dde6" font-size="22" font-weight="500" letter-spacing="0.03em">xiǎng gòu yí wàn biàn jiù zài yì qǐ</text>
+    </g>
+  </g>
+
+  <!-- Bottom-Right Floating Smart Pill -->
+  <g transform="translate(916, 520)">
+    <rect x="0" y="0" width="222" height="44" rx="22" fill="rgba(16,16,20,0.86)" stroke="rgba(255,255,255,0.16)" stroke-width="1"/>
+    <rect x="7" y="7" width="132" height="30" rx="15" fill="rgba(29,185,84,0.22)"/>
+    <circle cx="24" cy="22" r="4.5" fill="#1ed760" class="dotPulse"/>
+    <text x="36" y="26.5" class="sans" fill="#1ed760" font-size="13" font-weight="700">拼 Spinyin ON</text>
+    <rect x="145" y="7" width="70" height="30" rx="15" fill="rgba(255,255,255,0.10)"/>
+    <text x="180" y="26.5" text-anchor="middle" class="sans" fill="#ffffff" font-size="12.5" font-weight="700">nǐ hǎo</text>
+  </g>
+</svg>
